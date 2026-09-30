@@ -28,9 +28,14 @@ export default async function MeetingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
-        <p className="text-sm text-muted">Recordings, transcripts and notes from your calls.</p>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
+          <p className="text-sm text-muted">Recordings, transcripts and notes from your calls.</p>
+        </div>
+        <Link href="/upload" className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90">
+          Upload recording
+        </Link>
       </div>
       {isConfigured() ? <MeetingList /> : <SetupNotice />}
     </div>
