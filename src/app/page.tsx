@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
+import { LanguageBadge } from "@/components/language-badge";
 import { SetupNotice } from "@/components/setup-notice";
 import { listMeetings } from "@/lib/data";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
@@ -37,7 +38,10 @@ export default async function MeetingsPage() {
 }
 
 async function MeetingList() {
-  const meetings = await listMeetings();
+  // Hinglish meetings are the product's point, so they're pinned to the top.
+  const meetings = (await listMeetings()).sort(
+    (a, b) => Number(b.language_mix === "hi-en") - Number(a.language_mix === "hi-en"),
+  );
 
   if (meetings.length === 0) {
     return (
@@ -58,6 +62,8 @@ async function MeetingList() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate font-medium">{m.title}</p>
+                <LanguageBadge meeting={m} />
+                {m.language_mix === "hi-en" && <span className="shrink-0 text-xs text-muted">Pinned</span>}
                 {STATUS_LABEL[m.status] && (
                   <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
                     {STATUS_LABEL[m.status]}

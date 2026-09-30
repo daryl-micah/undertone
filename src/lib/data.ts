@@ -37,18 +37,19 @@ export async function listActionItems(): Promise<ActionItemListItem[]> {
     .map(({ meetings, ...a }) => ({ ...a, meeting_title: meetings.title }));
 }
 
-export type HighlightListItem = Highlight & { meeting_title: string };
+export type HighlightListItem = Highlight & { meeting_title: string; meeting_language_mix: string };
 
 export async function listHighlights(): Promise<HighlightListItem[]> {
   const { data, error } = await db()
     .from("highlights")
-    .select("*, meetings(title)")
+    .select("*, meetings(title, language_mix)")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw error;
-  return (data as (Highlight & { meetings: { title: string } })[]).map(({ meetings, ...h }) => ({
+  return (data as (Highlight & { meetings: { title: string; language_mix: string } })[]).map(({ meetings, ...h }) => ({
     ...h,
     meeting_title: meetings.title,
+    meeting_language_mix: meetings.language_mix,
   }));
 }
 
@@ -57,11 +58,14 @@ export interface TranscriptHit {
   meeting_title: string;
   meeting_started_at: string | null;
   platform: MeetingPlatform;
+  language_mix: string;
   seq: number;
   start_ms: number;
   speaker_name: string;
   speaker_color: string | null;
   headline: string; // matched words wrapped in « »
+  headline_romanized: string | null;
+  headline_english: string | null;
 }
 
 export interface HighlightHit {
@@ -116,7 +120,7 @@ async function allSegments(meetingId: string): Promise<TranscriptSegment[]> {
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await db()
       .from("transcript_segments")
-      .select("id, meeting_id, seq, participant_id, speaker_label, start_ms, end_ms, text")
+      .select("id, meeting_id, seq, participant_id, speaker_label, start_ms, end_ms, text, text_romanized, text_english, hindi_ratio")
       .eq("meeting_id", meetingId)
       .order("seq")
       .range(from, from + PAGE - 1);

@@ -19,6 +19,7 @@ export function snapToLines(segments: TranscriptSegment[], start: number, end: n
 export function HighlightComposer({
   meetingId,
   segments,
+  textOf,
   durationMs,
   range,
   onPreview,
@@ -27,6 +28,7 @@ export function HighlightComposer({
 }: {
   meetingId: string;
   segments: TranscriptSegment[];
+  textOf: (s: TranscriptSegment) => string;
   durationMs: number;
   range: { start: number; end: number };
   onPreview: (start: number, end: number) => void;
@@ -59,9 +61,9 @@ export function HighlightComposer({
     () =>
       segments
         .filter((s) => s.start_ms < end && s.end_ms > start)
-        .map((s) => s.text)
+        .map(textOf)
         .join(" "),
-    [segments, start, end],
+    [segments, textOf, start, end],
   );
 
   const nudge = (which: "start" | "end", delta: number) => {

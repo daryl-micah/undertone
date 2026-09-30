@@ -136,18 +136,28 @@ function Hit({ hit, href }: { hit: TranscriptHit; href: string }) {
             {hit.speaker_name}
           </span>
           <span className="block leading-relaxed">
-            {hit.headline.split(/[«»]/).map((part, i) =>
-              i % 2 ? (
-                <mark key={i} className="rounded-sm bg-amber-200 px-0.5 text-[#1a1a18]">
-                  {part}
-                </mark>
-              ) : (
-                part
-              ),
-            )}
+            <Marks text={hit.headline} />
           </span>
+          {hit.headline_english && (
+            <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+              <span className="mr-1 font-medium">EN</span>
+              <Marks text={hit.headline_english} />
+            </span>
+          )}
         </span>
       </Link>
     </li>
+  );
+}
+
+function Marks({ text }: { text: string }) {
+  return text.split(/[«»]/).map((part, i) =>
+    i % 2 ? (
+      <mark key={i} className="rounded-sm bg-amber-200 px-0.5 text-[#1a1a18]">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
   );
 }

@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
+import { LanguageBadge } from "@/components/language-badge";
 import { MeetingView } from "@/components/meeting/meeting-view";
 import { SetupNotice } from "@/components/setup-notice";
 import { getMeeting } from "@/lib/data";
 import { formatDuration, formatMeetingDate } from "@/lib/format";
+import { parseScriptMode } from "@/lib/script";
 import { isConfigured } from "@/lib/supabase";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,6 +24,23 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
   if (!detail) notFound();
 
   const { meeting, participants, segments, chapters, actionItems, highlights, media, templates, summaries } = detail;
+  if (meeting.status !== "ready" || !segments.length) {
+    return (
+      <div className="space-y-4">
+        <Link href="/" className="text-sm text-muted hover:text-text">
+          ← Meetings
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">{meeting.title}</h1>
+        <p className="rounded-xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted">
+          {meeting.status === "failed"
+            ? "This recording couldn't be processed. Try uploading it again."
+            : meeting.status === "processing"
+              ? "Still transcribing this recording. Refresh in a minute."
+              : "There's no transcript for this meeting yet."}
+        </p>
+      </div>
+    );
+  }
 
   // ?t=<seconds> deep-links to a moment; ?clip=<highlight id> opens a highlight as a clip.
   const query = await props.searchParams;
@@ -38,7 +57,10 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
           <Link href="/" className="text-sm text-muted hover:text-text">
             ← Meetings
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{meeting.title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">{meeting.title}</h1>
+            <LanguageBadge meeting={meeting} />
+          </div>
           <p className="text-sm text-muted">
             {formatMeetingDate(meeting.started_at)} · {PLATFORM_LABEL[meeting.platform]} ·{" "}
             {formatDuration(meeting.duration_ms)} · {participants.length} people
@@ -71,6 +93,8 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
         initialMs={Math.min(initialMs, durationMs)}
         initialClipId={clip?.id}
         initialQuery={typeof query.q === "string" ? query.q : ""}
+        languageMix={meeting.language_mix}
+        initialScript={parseScriptMode(query.script)}
       />
     </div>
   );

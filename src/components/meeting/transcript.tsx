@@ -3,7 +3,8 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { formatTimestamp } from "@/lib/format";
 import { speakerColor } from "@/lib/speakers";
-import type { Highlight, TranscriptSegment } from "@/lib/types";
+import { ScriptToggle } from "@/components/script-toggle";
+import type { Highlight, ScriptMode, TranscriptSegment } from "@/lib/types";
 import type { ViewParticipant } from "./meeting-view";
 
 interface Turn {
@@ -22,6 +23,9 @@ export function Transcript({
   onQueryChange,
   matches,
   highlights,
+  textOf,
+  scriptMode,
+  onScriptChange,
   onSeek,
   onHighlightRange,
 }: {
@@ -33,6 +37,10 @@ export function Transcript({
   onQueryChange: (q: string) => void;
   matches: number[];
   highlights: Highlight[];
+  textOf: (s: TranscriptSegment) => string;
+  /** null when the meeting isn't code-mixed, which hides the toggle. */
+  scriptMode: ScriptMode | null;
+  onScriptChange: (m: ScriptMode) => void;
   onSeek: (ms: number, play?: boolean) => void;
   onHighlightRange: (start: number, end: number) => void;
 }) {
@@ -145,6 +153,13 @@ export function Transcript({
         )}
       </div>
 
+      {scriptMode && (
+        <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+          <span className="text-xs text-muted">Hinglish · show as</span>
+          <ScriptToggle mode={scriptMode} onChange={onScriptChange} />
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         onWheel={() => {
@@ -174,6 +189,7 @@ export function Transcript({
               query={searching ? q : ""}
               currentMatchIndex={holdsMatch ? matches[currentMatch] : -1}
               marked={marked}
+              textOf={textOf}
               onSeek={onSeek}
             />
           );
@@ -221,6 +237,7 @@ const TurnBlock = memo(function TurnBlock({
   query,
   currentMatchIndex,
   marked,
+  textOf,
   onSeek,
 }: {
   turn: Turn;
@@ -231,6 +248,7 @@ const TurnBlock = memo(function TurnBlock({
   query: string;
   currentMatchIndex: number;
   marked: string;
+  textOf: (s: TranscriptSegment) => string;
   onSeek: (ms: number, play?: boolean) => void;
 }) {
   const start = segments[turn.first].start_ms;
@@ -260,7 +278,7 @@ const TurnBlock = memo(function TurnBlock({
                 active ? "bg-accent-soft text-text" : "hover:bg-surface-2"
               } ${activeIndex >= 0 && i > activeIndex ? "text-muted" : ""}`}
             >
-              {query ? <Marked text={s.text} query={query} strong={i === currentMatchIndex} /> : s.text}{" "}
+              {query ? <Marked text={textOf(s)} query={query} strong={i === currentMatchIndex} /> : textOf(s)}{" "}
             </span>
           );
         })}

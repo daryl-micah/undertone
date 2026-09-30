@@ -29,7 +29,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/meetings/[i
 
   const { data: segments, error: segError } = await client
     .from("transcript_segments")
-    .select("text")
+    .select("text, text_romanized, text_english")
     .eq("meeting_id", id)
     .lt("start_ms", end)
     .gt("end_ms", start)
@@ -46,6 +46,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/meetings/[i
       title: clean(body.title, 120),
       note: clean(body.note, 1000),
       excerpt: segments.map((s) => s.text).join(" ") || null,
+      excerpt_romanized: segments.map((s) => s.text_romanized ?? s.text).join(" ") || null,
+      excerpt_english: segments.map((s) => s.text_english ?? s.text).join(" ") || null,
       created_by_name: clean(body.created_by_name, 60) ?? "Guest",
     })
     .select("*")

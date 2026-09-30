@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clipTitle, formatTimestamp } from "@/lib/format";
-import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate, TranscriptSegment } from "@/lib/types";
+import { segmentText } from "@/lib/script";
+import type {
+  ActionItem,
+  Chapter,
+  Highlight,
+  ScriptMode,
+  Summary,
+  SummaryTemplate,
+  TranscriptSegment,
+} from "@/lib/types";
 import { HighlightComposer, snapToLines } from "./highlight-composer";
 import { Panels } from "./panels";
 import { Stage } from "./stage";
@@ -58,6 +67,8 @@ export function MeetingView({
   initialMs,
   initialClipId,
   initialQuery = "",
+  languageMix,
+  initialScript,
 }: {
   meetingId: string;
   templates: SummaryTemplate[];
@@ -72,12 +83,33 @@ export function MeetingView({
   initialMs: number;
   initialClipId?: string;
   initialQuery?: string;
+  languageMix: "en" | "hi-en" | "hi";
+  initialScript: ScriptMode;
 }) {
   const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const [ms, setMs] = useState(initialMs);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
   const [query, setQuery] = useState(initialQuery);
+  // Hinglish meetings can be read as spoken, romanized or in English; kept in ?script=.
+  const hinglish = languageMix === "hi-en";
+  const [scriptMode, setScriptMode] = useState<ScriptMode>(hinglish ? initialScript : "mixed");
+  const textOf = useCallback((s: TranscriptSegment) => segmentText(s, scriptMode), [scriptMode]);
+  const changeScript = useCallback((mode: ScriptMode) => {
+    setScriptMode(mode);
+    const url = new URL(window.location.href);
+    if (mode === "mixed") url.searchParams.delete("script");
+    else url.searchParams.set("script", mode);
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
+  const excerptOf = useCallback(
+    (h: Highlight) =>
+      segments
+        .filter((s) => s.start_ms < h.end_ms && s.end_ms > h.start_ms)
+        .map(textOf)
+        .join(" ") || h.excerpt,
+    [segments, textOf],
+  );
   const [highlights, setHighlights] = useState(initialHighlights);
   const [composer, setComposer] = useState<{ start: number; end: number } | null>(null);
   // A clip plays a bounded range and stops at its end.
@@ -196,8 +228,8 @@ export function MeetingView({
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
-    return segments.flatMap((s, i) => (s.text.toLowerCase().includes(q) ? [i] : []));
-  }, [query, segments]);
+    return segments.flatMap((s, i) => (textOf(s).toLowerCase().includes(q) ? [i] : []));
+  }, [query, segments, textOf]);
 
   return (
     // Mobile order: player, transcript, panels. Desktop: player and panels left, transcript right.
@@ -299,6 +331,9 @@ export function MeetingView({
         onQueryChange={setQuery}
         matches={matches}
         highlights={highlights}
+        textOf={textOf}
+        scriptMode={hinglish ? scriptMode : null}
+        onScriptChange={changeScript}
         onSeek={seek}
         onHighlightRange={(start, end) => {
           mediaRef.current?.pause();
@@ -317,8 +352,9 @@ export function MeetingView({
           chapters={chapters}
           actionItems={actionItems}
           highlights={highlights}
+          excerptOf={excerptOf}
           onSeek={seek}
-          onPlayClip={(h) => playClip(h.start_ms, h.end_ms, clipTitle(h))}
+          onPlayClip={(h) => playClip(h.start_ms, h.end_ms, clipTitle({ title: h.title, excerpt: excerptOf(h) }))}
           onDeleteHighlight={async (h) => {
             const res = await fetch(`/api/highlights/${h.id}`, { method: "DELETE" });
             if (res.ok) setHighlights((list) => list.filter((x) => x.id !== h.id));
@@ -330,6 +366,7 @@ export function MeetingView({
         <HighlightComposer
           meetingId={meetingId}
           segments={segments}
+          textOf={textOf}
           durationMs={durationMs}
           range={composer}
           onPreview={(start, end) => playClip(start, end, "Preview")}

@@ -20,6 +20,7 @@ export function Panels({
   chapters,
   actionItems,
   highlights,
+  excerptOf,
   onSeek,
   onPlayClip,
   onDeleteHighlight,
@@ -33,6 +34,7 @@ export function Panels({
   chapters: Chapter[];
   actionItems: ActionItem[];
   highlights: Highlight[];
+  excerptOf: (h: Highlight) => string | null;
   onSeek: (ms: number, play?: boolean) => void;
   onPlayClip: (h: Highlight) => void;
   onDeleteHighlight: (h: Highlight) => void;
@@ -137,14 +139,14 @@ export function Panels({
                 <li key={h.id} className="group flex items-start gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2">
                   <button
                     onClick={() => onPlayClip(h)}
-                    aria-label={`Play clip: ${clipTitle(h)}`}
+                    aria-label={`Play clip: ${clipTitle({ title: h.title, excerpt: excerptOf(h) })}`}
                     className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-300 text-[10px] text-[#1a1a18] hover:bg-amber-400"
                   >
                     ▶
                   </button>
                   <button onClick={() => onPlayClip(h)} className="min-w-0 flex-1 text-left">
-                    <span className="font-medium">{clipTitle(h)}</span>
-                    {h.excerpt && <span className="mt-0.5 line-clamp-2 block text-xs text-muted">“{h.excerpt}”</span>}
+                    <span className="font-medium">{clipTitle({ title: h.title, excerpt: excerptOf(h) })}</span>
+                    {excerptOf(h) && <span className="mt-0.5 line-clamp-2 block text-xs text-muted">“{excerptOf(h)}”</span>}
                     {h.note && <span className="mt-1 block text-xs">{h.note}</span>}
                     <span className="mt-1 block font-mono text-[11px] text-muted">
                       {formatTimestamp(h.start_ms)}–{formatTimestamp(h.end_ms)} · {formatDuration(h.end_ms - h.start_ms)} ·{" "}
@@ -153,7 +155,7 @@ export function Panels({
                   </button>
                   <button
                     onClick={() => confirm("Delete this highlight?") && onDeleteHighlight(h)}
-                    aria-label={`Delete highlight: ${clipTitle(h)}`}
+                    aria-label={`Delete highlight: ${clipTitle({ title: h.title, excerpt: excerptOf(h) })}`}
                     className="shrink-0 rounded px-1.5 text-muted opacity-0 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100"
                   >
                     ✕
