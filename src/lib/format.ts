@@ -38,3 +38,8 @@ export function initials(name: string) {
     .join("")
     .toUpperCase();
 }
+
+/** A highlight's title, or its opening words when it has none. */
+export function clipTitle(h: { title: string | null; excerpt: string | null }) {
+  return h.title ?? (h.excerpt ? h.excerpt.split(/\s+/).slice(0, 8).join(" ") + "…" : "Untitled highlight");
+}

@@ -37,6 +37,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/" className="hover:text-text">
                 Meetings
               </Link>
+              <Link href="/highlights" className="hover:text-text">
+                Highlights
+              </Link>
               <Link href="/action-items" className="hover:text-text">
                 Action items
               </Link>

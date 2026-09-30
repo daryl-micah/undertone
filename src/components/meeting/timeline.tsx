@@ -15,6 +15,7 @@ export function Timeline({
   segments,
   chapters,
   highlights,
+  clip,
   matchTimes,
   onSeek,
 }: {
@@ -24,6 +25,7 @@ export function Timeline({
   segments: TranscriptSegment[];
   chapters: Chapter[];
   highlights: Highlight[];
+  clip: { start: number; end: number } | null;
   matchTimes: number[];
   onSeek: (ms: number) => void;
 }) {
@@ -66,6 +68,12 @@ export function Timeline({
           <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-surface-2">
             <div className="h-full rounded-full bg-accent" style={{ width: pct(ms, durationMs) }} />
           </div>
+          {clip && (
+            <span
+              className="absolute top-1/2 h-4 -translate-y-1/2 rounded bg-amber-300/40 ring-1 ring-amber-400"
+              style={{ left: pct(clip.start, durationMs), width: `max(6px, ${pct(clip.end - clip.start, durationMs)})` }}
+            />
+          )}
           {chapters.slice(1).map((c) => (
             <span
               key={c.id}

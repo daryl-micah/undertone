@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ActionItemCheck } from "@/components/action-item-check";
-import { formatDuration, formatTimestamp } from "@/lib/format";
+import { clipTitle, formatDuration, formatTimestamp } from "@/lib/format";
 import { speakerColor } from "@/lib/speakers";
 import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate } from "@/lib/types";
 import type { ViewParticipant } from "./meeting-view";
@@ -21,6 +21,8 @@ export function Panels({
   actionItems,
   highlights,
   onSeek,
+  onPlayClip,
+  onDeleteHighlight,
 }: {
   meetingId: string;
   templates: SummaryTemplate[];
@@ -32,6 +34,8 @@ export function Panels({
   actionItems: ActionItem[];
   highlights: Highlight[];
   onSeek: (ms: number, play?: boolean) => void;
+  onPlayClip: (h: Highlight) => void;
+  onDeleteHighlight: (h: Highlight) => void;
 }) {
   const [tab, setTab] = useState<Tab>("summary");
   const [copied, setCopied] = useState(false);
@@ -47,14 +51,14 @@ export function Panels({
 
   return (
     <section className="rounded-xl border border-border bg-surface">
-      <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-border px-2">
+      <div role="tablist" className="flex gap-1 overflow-x-auto px-2 shadow-[inset_0_-1px_0_var(--border)]">
         {tabs.map((t) => (
           <button
             key={t.key}
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`-mb-px shrink-0 border-b-2 px-3 py-2.5 text-sm ${
+            className={`shrink-0 border-b-2 px-3 py-2.5 text-sm ${
               tab === t.key ? "border-accent font-medium text-text" : "border-transparent text-muted hover:text-text"
             }`}
           >
@@ -130,18 +134,38 @@ export function Panels({
           (highlights.length ? (
             <ul>
               {highlights.map((h) => (
-                <Row key={h.id} onClick={() => onSeek(h.start_ms, true)} time={h.start_ms}>
-                  <span className="flex-1">
-                    {h.title ?? "Untitled highlight"}
-                    <span className="block text-xs text-muted">
-                      {formatDuration(h.end_ms - h.start_ms)} · {h.created_by_name}
+                <li key={h.id} className="group flex items-start gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2">
+                  <button
+                    onClick={() => onPlayClip(h)}
+                    aria-label={`Play clip: ${clipTitle(h)}`}
+                    className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-300 text-[10px] text-[#1a1a18] hover:bg-amber-400"
+                  >
+                    ▶
+                  </button>
+                  <button onClick={() => onPlayClip(h)} className="min-w-0 flex-1 text-left">
+                    <span className="font-medium">{clipTitle(h)}</span>
+                    {h.excerpt && <span className="mt-0.5 line-clamp-2 block text-xs text-muted">“{h.excerpt}”</span>}
+                    {h.note && <span className="mt-1 block text-xs">{h.note}</span>}
+                    <span className="mt-1 block font-mono text-[11px] text-muted">
+                      {formatTimestamp(h.start_ms)}–{formatTimestamp(h.end_ms)} · {formatDuration(h.end_ms - h.start_ms)} ·{" "}
+                      <span className="font-sans">{h.created_by_name}</span>
                     </span>
-                  </span>
-                </Row>
+                  </button>
+                  <button
+                    onClick={() => confirm("Delete this highlight?") && onDeleteHighlight(h)}
+                    aria-label={`Delete highlight: ${clipTitle(h)}`}
+                    className="shrink-0 rounded px-1.5 text-muted opacity-0 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100"
+                  >
+                    ✕
+                  </button>
+                </li>
               ))}
             </ul>
           ) : (
-            <Empty>No highlights yet.</Empty>
+            <Empty>
+              No highlights yet. Press <kbd className="rounded border border-border px-1 font-mono text-xs">H</kbd> while
+              watching, or select lines in the transcript.
+            </Empty>
           ))}
 
         {tab === "speakers" && (

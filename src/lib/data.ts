@@ -36,6 +36,21 @@ export async function listActionItems(): Promise<ActionItemListItem[]> {
     .map(({ meetings, ...a }) => ({ ...a, meeting_title: meetings.title }));
 }
 
+export type HighlightListItem = Highlight & { meeting_title: string };
+
+export async function listHighlights(): Promise<HighlightListItem[]> {
+  const { data, error } = await db()
+    .from("highlights")
+    .select("*, meetings(title)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data as (Highlight & { meetings: { title: string } })[]).map(({ meetings, ...h }) => ({
+    ...h,
+    meeting_title: meetings.title,
+  }));
+}
+
 // Supabase caps every response at 1000 rows server-side, and an hour-long call
 // has more segments than that, so page through them.
 const PAGE = 1000;

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatTimestamp } from "@/lib/format";
+import { clipTitle, formatTimestamp } from "@/lib/format";
 import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate, TranscriptSegment } from "@/lib/types";
+import { HighlightComposer, snapToLines } from "./highlight-composer";
 import { Panels } from "./panels";
 import { Stage } from "./stage";
 import { Timeline } from "./timeline";
@@ -53,8 +54,9 @@ export function MeetingView({
   segments,
   chapters,
   actionItems,
-  highlights,
+  highlights: initialHighlights,
   initialMs,
+  initialClipId,
 }: {
   meetingId: string;
   templates: SummaryTemplate[];
@@ -67,12 +69,30 @@ export function MeetingView({
   actionItems: ActionItem[];
   highlights: Highlight[];
   initialMs: number;
+  initialClipId?: string;
 }) {
   const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const [ms, setMs] = useState(initialMs);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
   const [query, setQuery] = useState("");
+  const [highlights, setHighlights] = useState(initialHighlights);
+  const [composer, setComposer] = useState<{ start: number; end: number } | null>(null);
+  // A clip plays a bounded range and stops at its end.
+  const [clip, setClip] = useState<{ start: number; end: number; title: string } | null>(() => {
+    const h = initialHighlights.find((x) => x.id === initialClipId);
+    return h ? { start: h.start_ms, end: h.end_ms, title: clipTitle(h) } : null;
+  });
+  const clipRef = useRef(clip);
+  useEffect(() => {
+    clipRef.current = clip;
+  }, [clip]);
+
+  // Start at ?t= / ?clip=. The element may have loaded metadata before hydration,
+  // so a loadedmetadata handler alone can miss it; setting currentTime works either way.
+  useEffect(() => {
+    if (mediaRef.current && initialMs > 0) mediaRef.current.currentTime = initialMs / 1000;
+  }, [initialMs]);
 
   // Smooth playhead while playing; paused state is driven by seeks.
   useEffect(() => {
@@ -80,7 +100,15 @@ export function MeetingView({
     let raf = 0;
     const tick = () => {
       const el = mediaRef.current;
-      if (el) setMs(el.currentTime * 1000);
+      if (el) {
+        const now = el.currentTime * 1000;
+        const c = clipRef.current;
+        if (c && now >= c.end) {
+          el.pause();
+          el.currentTime = c.end / 1000;
+        }
+        setMs(c ? Math.min(now, c.end) : now);
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -91,6 +119,8 @@ export function MeetingView({
     (to: number, play = false) => {
       const el = mediaRef.current;
       const clamped = Math.max(0, Math.min(to, durationMs));
+      const c = clipRef.current;
+      if (c && (clamped < c.start - 500 || clamped > c.end)) setClip(null);
       setMs(clamped);
       if (!el) return;
       el.currentTime = clamped / 1000;
@@ -102,9 +132,28 @@ export function MeetingView({
   const togglePlay = useCallback(() => {
     const el = mediaRef.current;
     if (!el) return;
+    const c = clipRef.current;
+    // Replaying a finished clip starts it over.
+    if (el.paused && c && el.currentTime * 1000 >= c.end - 50) el.currentTime = c.start / 1000;
     if (el.paused) void el.play();
     else el.pause();
   }, []);
+
+  const playClip = useCallback(
+    (start: number, end: number, title: string) => {
+      const c = { start, end, title };
+      clipRef.current = c;
+      setClip(c);
+      seek(start, true);
+    },
+    [seek],
+  );
+
+  const highlightLastMoment = useCallback(() => {
+    const now = (mediaRef.current?.currentTime ?? 0) * 1000;
+    mediaRef.current?.pause();
+    setComposer(snapToLines(segments, Math.max(0, now - 15_000), Math.max(now, 1000)));
+  }, [segments]);
 
   const changeRate = useCallback(() => {
     setRate((r) => {
@@ -126,6 +175,7 @@ export function MeetingView({
         l: () => seek(now + 10_000),
         ArrowLeft: () => seek(now - 5_000),
         ArrowRight: () => seek(now + 5_000),
+        h: highlightLastMoment,
       };
       const action = actions[e.key];
       if (!action) return;
@@ -134,7 +184,7 @@ export function MeetingView({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [seek, togglePlay]);
+  }, [seek, togglePlay, highlightLastMoment]);
 
   const activeIndex = segmentAt(segments, ms);
   const active = activeIndex >= 0 ? segments[activeIndex] : null;
@@ -167,6 +217,19 @@ export function MeetingView({
             </>
           )}
 
+          {clip && (
+            <div className="flex items-center gap-3 bg-amber-100 px-4 py-2 text-sm text-[#1a1a18]">
+              <span className="rounded bg-amber-300 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wide">Clip</span>
+              <span className="min-w-0 flex-1 truncate">{clip.title}</span>
+              <span className="font-mono text-xs tabular-nums">
+                {formatTimestamp(Math.max(0, ms - clip.start))} / {formatTimestamp(clip.end - clip.start)}
+              </span>
+              <button onClick={() => setClip(null)} className="rounded px-2 py-0.5 text-xs font-medium hover:bg-amber-200">
+                Exit clip
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-4 py-3">
             <button
               onClick={togglePlay}
@@ -192,13 +255,23 @@ export function MeetingView({
                 <span className="text-text">{chapter.title}</span>
               </p>
             )}
-            <button
-              onClick={changeRate}
-              className="ml-auto rounded-md border border-border px-2 py-1 font-mono text-xs tabular-nums hover:bg-surface-2"
-              aria-label="Playback speed"
-            >
-              {rate}×
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={highlightLastMoment}
+                disabled={!segments.length}
+                title="Highlight the last 15 seconds (H)"
+                className="flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-[#1a1a18] hover:bg-amber-100 disabled:opacity-40"
+              >
+                <span aria-hidden>✦</span> Highlight
+              </button>
+              <button
+                onClick={changeRate}
+                className="rounded-md border border-border px-2 py-1 font-mono text-xs tabular-nums hover:bg-surface-2"
+                aria-label="Playback speed"
+              >
+                {rate}×
+              </button>
+            </div>
           </div>
 
           <Timeline
@@ -208,6 +281,7 @@ export function MeetingView({
             segments={segments}
             chapters={chapters}
             highlights={highlights}
+            clip={clip}
             matchTimes={matches.map((i) => segments[i].start_ms)}
             onSeek={seek}
           />
@@ -222,7 +296,12 @@ export function MeetingView({
         query={query}
         onQueryChange={setQuery}
         matches={matches}
+        highlights={highlights}
         onSeek={seek}
+        onHighlightRange={(start, end) => {
+          mediaRef.current?.pause();
+          setComposer({ start, end });
+        }}
       />
 
       <div className="min-w-0 lg:col-start-1 lg:row-start-2">
@@ -237,8 +316,29 @@ export function MeetingView({
           actionItems={actionItems}
           highlights={highlights}
           onSeek={seek}
+          onPlayClip={(h) => playClip(h.start_ms, h.end_ms, clipTitle(h))}
+          onDeleteHighlight={async (h) => {
+            const res = await fetch(`/api/highlights/${h.id}`, { method: "DELETE" });
+            if (res.ok) setHighlights((list) => list.filter((x) => x.id !== h.id));
+          }}
         />
       </div>
+
+      {composer && (
+        <HighlightComposer
+          meetingId={meetingId}
+          segments={segments}
+          durationMs={durationMs}
+          range={composer}
+          onPreview={(start, end) => playClip(start, end, "Preview")}
+          onClose={() => setComposer(null)}
+          onSaved={(h) => {
+            setHighlights((list) => [...list, h].sort((a, b) => a.start_ms - b.start_ms));
+            setComposer(null);
+            setClip(null);
+          }}
+        />
+      )}
     </div>
   );
 
@@ -248,9 +348,6 @@ export function MeetingView({
       onPause: () => setPlaying(false),
       onEnded: () => setPlaying(false),
       onSeeked: (e: React.SyntheticEvent<HTMLMediaElement>) => setMs(e.currentTarget.currentTime * 1000),
-      onLoadedMetadata: (e: React.SyntheticEvent<HTMLMediaElement>) => {
-        if (initialMs > 0) e.currentTarget.currentTime = initialMs / 1000;
-      },
     };
   }
 }

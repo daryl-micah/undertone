@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { formatTimestamp } from "@/lib/format";
 import { speakerColor } from "@/lib/speakers";
-import type { TranscriptSegment } from "@/lib/types";
+import type { Highlight, TranscriptSegment } from "@/lib/types";
 import type { ViewParticipant } from "./meeting-view";
 
 interface Turn {
@@ -21,7 +21,9 @@ export function Transcript({
   query,
   onQueryChange,
   matches,
+  highlights,
   onSeek,
+  onHighlightRange,
 }: {
   participants: ViewParticipant[];
   segments: TranscriptSegment[];
@@ -30,9 +32,13 @@ export function Transcript({
   query: string;
   onQueryChange: (q: string) => void;
   matches: number[];
+  highlights: Highlight[];
   onSeek: (ms: number, play?: boolean) => void;
+  onHighlightRange: (start: number, end: number) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [selection, setSelection] = useState<{ first: number; last: number; top: number; left: number } | null>(null);
   const [following, setFollowing] = useState(true);
   const [matchCursor, setMatchCursor] = useState(0);
   const byId = useMemo(() => new Map(participants.map((p) => [p.id, p])), [participants]);
@@ -74,8 +80,35 @@ export function Transcript({
 
   const stopFollowing = () => setFollowing(false);
 
+  // Lines inside any highlight get marked, so you can see where highlights landed.
+  const highlighted = useMemo(() => {
+    const set = new Set<number>();
+    for (const h of highlights) {
+      segments.forEach((s, i) => s.start_ms < h.end_ms && s.end_ms > h.start_ms && set.add(i));
+    }
+    return set;
+  }, [highlights, segments]);
+
+  // Selecting transcript text offers to highlight exactly those lines.
+  function readSelection() {
+    const sel = window.getSelection();
+    const box = scrollRef.current;
+    if (!sel || sel.isCollapsed || !box || !sectionRef.current) return setSelection(null);
+    const lineOf = (n: Node | null) =>
+      (n instanceof Element ? n : n?.parentElement)?.closest<HTMLElement>("[data-i]") ?? null;
+    const a = lineOf(sel.anchorNode);
+    const b = lineOf(sel.focusNode);
+    if (!a || !b || !box.contains(a) || !box.contains(b)) return setSelection(null);
+    const [first, last] = [Number(a.dataset.i), Number(b.dataset.i)].sort((x, y) => x - y);
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    const outer = sectionRef.current.getBoundingClientRect();
+    setSelection({ first, last, top: rect.top - outer.top - 40, left: rect.left - outer.left + rect.width / 2 });
+  }
   return (
-    <section className="relative flex h-[70vh] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-7rem)] lg:self-start">
+    <section
+      ref={sectionRef}
+      className="relative flex h-[70vh] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-7rem)] lg:self-start"
+    >
       <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
         <h2 className="px-1 text-sm font-medium">Transcript</h2>
         <div className="relative ml-auto flex min-w-0 flex-1 items-center">
@@ -114,8 +147,13 @@ export function Transcript({
 
       <div
         ref={scrollRef}
-        onWheel={stopFollowing}
+        onWheel={() => {
+          stopFollowing();
+          setSelection(null);
+        }}
         onTouchMove={stopFollowing}
+        onMouseUp={() => setTimeout(readSelection, 0)}
+        onTouchEnd={() => setTimeout(readSelection, 0)}
         onPointerDown={(e) => e.target === e.currentTarget && stopFollowing()}
         className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2"
       >
@@ -123,6 +161,8 @@ export function Transcript({
           const p = t.participantId ? byId.get(t.participantId) : undefined;
           const holdsActive = activeIndex >= t.first && activeIndex <= t.last;
           const holdsMatch = currentMatch >= 0 && matches[currentMatch] >= t.first && matches[currentMatch] <= t.last;
+          let marked = "";
+          for (let i = t.first; i <= t.last; i++) if (highlighted.has(i)) marked += `${i},`;
           return (
             <TurnBlock
               key={t.first}
@@ -133,11 +173,27 @@ export function Transcript({
               activeIndex={holdsActive ? activeIndex : -1}
               query={searching ? q : ""}
               currentMatchIndex={holdsMatch ? matches[currentMatch] : -1}
+              marked={marked}
               onSeek={onSeek}
             />
           );
         })}
       </div>
+
+      {selection && (
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            onHighlightRange(segments[selection.first].start_ms, segments[selection.last].end_ms);
+            window.getSelection()?.removeAllRanges();
+            setSelection(null);
+          }}
+          className="absolute z-10 -translate-x-1/2 rounded-full bg-text px-3 py-1.5 text-xs font-medium text-bg shadow-lg"
+          style={{ top: Math.max(56, selection.top), left: selection.left }}
+        >
+          ✦ Highlight {selection.last > selection.first ? `${selection.last - selection.first + 1} lines` : "line"}
+        </button>
+      )}
 
       {!following && (playing || activeIndex >= 0) && (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
@@ -164,6 +220,7 @@ const TurnBlock = memo(function TurnBlock({
   activeIndex,
   query,
   currentMatchIndex,
+  marked,
   onSeek,
 }: {
   turn: Turn;
@@ -173,9 +230,11 @@ const TurnBlock = memo(function TurnBlock({
   activeIndex: number;
   query: string;
   currentMatchIndex: number;
+  marked: string;
   onSeek: (ms: number, play?: boolean) => void;
 }) {
   const start = segments[turn.first].start_ms;
+  const markedSet = new Set(marked.split(",").filter(Boolean).map(Number));
   return (
     <div className="rounded-lg px-2 py-2">
       <div className="mb-0.5 flex items-baseline gap-2">
@@ -194,8 +253,10 @@ const TurnBlock = memo(function TurnBlock({
             <span
               key={s.id}
               data-i={i}
-              onClick={() => onSeek(s.start_ms, true)}
+              onClick={() => window.getSelection()?.isCollapsed !== false && onSeek(s.start_ms, true)}
               className={`cursor-pointer rounded px-0.5 transition-colors ${
+                markedSet.has(i) ? "underline decoration-amber-400 decoration-2 underline-offset-4" : ""
+              } ${
                 active ? "bg-accent-soft text-text" : "hover:bg-surface-2"
               } ${activeIndex >= 0 && i > activeIndex ? "text-muted" : ""}`}
             >

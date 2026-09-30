@@ -21,11 +21,13 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
   const detail = await getMeeting(id);
   if (!detail) notFound();
 
-  // ?t=<seconds> deep-links to a moment (search results, shared links).
-  const t = Number((await props.searchParams).t);
-  const initialMs = Number.isFinite(t) && t > 0 ? Math.round(t * 1000) : 0;
-
   const { meeting, participants, segments, chapters, actionItems, highlights, media, templates, summaries } = detail;
+
+  // ?t=<seconds> deep-links to a moment; ?clip=<highlight id> opens a highlight as a clip.
+  const query = await props.searchParams;
+  const clip = highlights.find((h) => h.id === query.clip);
+  const t = Number(query.t);
+  const initialMs = clip ? clip.start_ms : Number.isFinite(t) && t > 0 ? Math.round(t * 1000) : 0;
   const playable = media.find((m) => m.kind === "video") ?? media.find((m) => m.kind === "audio") ?? null;
   const durationMs = meeting.duration_ms ?? segments.at(-1)?.end_ms ?? 0;
 
@@ -67,6 +69,7 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
         actionItems={actionItems}
         highlights={highlights}
         initialMs={Math.min(initialMs, durationMs)}
+        initialClipId={clip?.id}
       />
     </div>
   );
