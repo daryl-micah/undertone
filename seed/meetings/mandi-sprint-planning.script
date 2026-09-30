@@ -1,0 +1,115 @@
+// Mandi (Bengaluru, B2B ordering app for kirana stores): Sprint 23 planning.
+// 5 people, ~12 minutes, natural Hinglish: Hindi in Devanagari, English in Latin script.
+// FOR REVIEW before voicing. Unlike the English scripts, this is NOT the transcript:
+// the voiced audio is transcribed with Sarvam saaras:v3 (codemix) and that output is stored.
+// Action item text is English on purpose: action items and summaries are always English.
+
+## Kickoff
+neha: Okay guys, चलो start करते हैं। Karthik आ गया क्या?
+karthik: हाँ, मैं यहाँ हूँ। Sorry, थोड़ा late हो गया, Silk Board पे फिर से traffic था।
+ayesha: Silk Board पे traffic कोई news नहीं है Karthik, वो तो रोज़ का है।
+karthik: हाँ, पर आज तो ऐसा लगा कि मैं वहीं settle हो जाऊँगा।
+neha: हाहा, okay. तो आज का agenda simple है। पहले quickly देखते हैं कि sprint twenty two में क्या ship हुआ और क्या spill over हुआ। फिर sprint twenty three का goal decide करेंगे, estimates करेंगे, और end में release date lock करेंगे।
+neha: मेरी request है कि हम इसे पैंतालीस minutes में खत्म करें, क्योंकि दो बजे मेरी investor call है।
+sneha: Done. मैं time track करती हूँ।
+
+## Sprint 22 recap
+neha: Ayesha, तुम sprint twenty two का quick recap दे दो।
+ayesha: Sure. Good news पहले। Distributors के लिए UPI autopay live हो गया है, और पहले हफ्ते में ही तीन सौ से ज़्यादा distributors ने उसे enable किया।
+rahul: Nice! वो तो expected से काफ़ी ज़्यादा है।
+ayesha: हाँ, बहुत ज़्यादा। Support tickets भी कम आए, क्योंकि अब payment manually confirm नहीं करना पड़ता।
+ayesha: पर bad news ये है कि offline mode फिर से spill over हो गया। वो तीसरी बार हो रहा है।
+neha: हम्म। Karthik, offline mode में actually क्या अटक रहा है?
+karthik: देखो, basic offline ordering काम कर रहा है। Store वाला net के बिना order बना सकता है, वो phone पे save हो जाता है। Problem sync में है। जब दो लोग same order को offline edit करते हैं, तो conflict आता है, और अभी हमारे पास कोई clear rule नहीं है कि कौन सा version जीतेगा।
+sneha: और testing में मैंने देखा कि कभी कभी same order दो बार sync हो जाता है। Duplicate order बनता है, और distributor को दो बार माल dispatch हो जाता है।
+ayesha: वो तो बहुत dangerous है। Real पैसों का नुकसान है।
+karthik: Exactly. इसीलिए मैंने उसे release नहीं होने दिया।
+neha: Good call. Customers ने offline mode के बारे में क्या बोला है, Ayesha?
+ayesha: ये हमारी top complaint है। Tumkur और Mandya जैसे areas में network बहुत weak है। पिछले महीने बारह stores ने सिर्फ़ इस वजह से churn किया। एक store owner ने literally बोला, जब net जाता है तो आपका app भी चला जाता है, फिर मैं पुराने तरीके से phone पे order देता हूँ।
+rahul: Ouch.
+neha: Okay. तो मुझे लगता है कि इस sprint का goal पहले से ही clear है।
+
+## Sprint 23 goal
+neha: मेरा proposal है कि sprint twenty three का single goal हो, offline mode को properly ship करना। Duplicate orders zero, और conflicts का एक clear rule।
+ayesha: मैं agree करती हूँ, पर distributors के लिए credit limit feature का क्या? Sales team दो हफ्ते से पीछे पड़ी है, और एक बड़ा distributor, Shree Traders, उसी के wait में है।
+neha: Credit limit कितना बड़ा है?
+karthik: Backend side से छोटा है। Limit set करना, और order place करते time check करना। शायद तीन points।
+rahul: Frontend पे भी ज़्यादा नहीं है, एक settings screen और एक warning banner।
+neha: Okay, तो ऐसा करते हैं। Offline mode primary goal है, और credit limit stretch goal। अगर offline mode में कुछ भी slip होता है, तो credit limit पहले drop होगा।
+ayesha: ठीक है, मैं Shree Traders को बता देती हूँ कि ये इस sprint में target है, पर promise नहीं। {action: Tell Shree Traders the credit limit feature is targeted for this sprint but not promised; due: today}
+neha: Perfect. और हाँ, उनसे ये भी पूछ लेना कि उनको limit per store चाहिए या per region।
+ayesha: हाँ, वो important question है। मैं पूछ लूँगी।
+
+## Estimates and the conflict rule
+neha: चलो estimates करते हैं। Karthik, offline sync का estimate क्या है?
+karthik: मैं eight points बोलूँगा, अगर हम conflict resolution simple रखें।
+sneha: Eight? मुझे लगता है thirteen होना चाहिए। Duplicate वाला bug अभी तक properly reproduce भी नहीं हुआ है, और उसकी testing में ही दो दिन जाएँगे।
+karthik: Fair point. Testing मैंने count नहीं की थी।
+neha: Simple conflict resolution से तुम्हारा मतलब क्या है?
+karthik: Last write wins। जो edit last में sync हुआ, वही final। और अगर दोनों edits एक minute के अंदर हैं, तो order को manual review के लिए flag कर देंगे, ताकि distributor खुद देख ले।
+ayesha: Store owners के लिए ये confusing तो नहीं होगा?
+rahul: मैं app में एक छोटा सा badge दिखा सकता हूँ, needs review, और उसपे tap करो तो दोनों versions दिख जाएँगे। Distributor एक choose कर लेगा।
+ayesha: हाँ, वो चलेगा। बस wording simple रखना, English और Kannada दोनों में।
+rahul: हाँ, Kannada strings मैं Priya से check करवा लूँगा।
+neha: Okay, तो decision ये रहा। Conflicts के लिए last write wins, और एक minute के अंदर वाले conflicts manual review में जाएँगे। Estimate thirteen points, testing के साथ।
+karthik: Agreed, thirteen।
+neha: Duplicate orders के लिए क्या plan है?
+karthik: हर order को एक idempotency key देंगे, phone पे ही generate होगी। Server same key दो बार accept नहीं करेगा। उससे duplicate वाला पूरा class of bugs खत्म हो जाएगा।
+sneha: मुझे वो पसंद है। पर मैं चाहूँगी कि पहले bug को reproduce कर लें, ताकि confirm हो कि fix सच में काम कर रहा है।
+karthik: हाँ, बिल्कुल। Sneha, तुम Thursday तक एक reliable repro case बना सकती हो?
+sneha: हाँ, Thursday तक हो जाएगा। मैं airplane mode वाला flow दो phones पे चलाऊँगी। {action: Build a reliable repro for the duplicate order bug on two phones; due: Thursday}
+karthik: Great. फिर मैं idempotency key का design doc कल तक share कर देता हूँ। {action: Share the design doc for order idempotency keys; due: tomorrow}
+
+## Measuring offline mode
+ayesha: एक चीज़ और, offline mode ship होने के बाद हमें पता कैसे चलेगा कि वो काम कर रहा है? अभी हमारे पास कोई data नहीं है कि कितने orders offline बनते हैं।
+neha: Good point. Launch के बाद हमें क्या देखना चाहिए?
+ayesha: मेरे हिसाब से तीन चीज़ें। कितने orders offline बने, उनमें से कितने successfully sync हुए, और कितने manual review में गए। और हाँ, sync होने में average कितना time लगा।
+karthik: ये सब events मैं sync API से ही भेज सकता हूँ। App में अलग से कुछ नहीं करना पड़ेगा।
+rahul: एक event app से भी चाहिए, जब store owner needs review वाला badge खोलता है। वरना हमें पता नहीं चलेगा कि लोग उसे समझ भी रहे हैं या नहीं।
+neha: Makes sense. और success का target क्या रखें?
+ayesha: Duplicate orders zero, वो तो non negotiable है। और manual review में पाँच percent से कम orders जाने चाहिए। अगर उससे ज़्यादा गए, तो मतलब हमारा conflict rule काम नहीं कर रहा।
+karthik: पाँच percent reasonable है। Tumkur वाले stores पे शायद थोड़ा ज़्यादा आए, पर average में आ जाएगा।
+neha: ठीक है, तो target ये रहा। Duplicate orders zero, और manual review पाँच percent से कम। Ayesha, dashboard तुम set up कर दोगी?
+ayesha: हाँ, Metabase में एक dashboard बना दूँगी, release से पहले। {action: Set up a Metabase dashboard for offline orders, sync success and manual review rate; due: before release}
+
+## WhatsApp notifications bug
+sneha: एक और चीज़ है जो इस sprint में जानी चाहिए। WhatsApp notifications duplicate जा रहे हैं। कुछ store owners को same order confirmation तीन तीन बार मिल रहा है।
+neha: ये कब से हो रहा है?
+sneha: Last Tuesday से, जब हमने notification service को नए queue पे move किया।
+karthik: ओह, मुझे पता है ये क्या है। नए queue में retries enable हैं, और हमारा WhatsApp provider timeout के बाद भी message भेज देता है। तो हम retry करते हैं, और message दो बार चला जाता है।
+ayesha: ये customers को काफ़ी annoying लग रहा है। दो stores ने तो notifications ही mute कर दिए।
+neha: तो ये P one है। Karthik, ये तुम ले सकते हो?
+karthik: हाँ, ये छोटा fix है। Message id पे deduplication लगा दूँगा। Wednesday तक हो जाएगा। {action: Fix duplicate WhatsApp notifications with dedup on message id; due: Wednesday}
+neha: Thanks. Sneha, fix आने के बाद इसे verify कर लेना।
+sneha: हाँ, मैं regression suite में भी एक test add कर दूँगी, ताकि ये वापस न आए।
+
+## Capacity and release date
+neha: अब capacity देख लेते हैं। Diwali से पहले का sprint है, तो लोग छुट्टी पे होंगे।
+karthik: मैं Friday और Monday छुट्टी पे हूँ, Mysore जा रहा हूँ family के साथ।
+rahul: मैं पूरा sprint available हूँ।
+sneha: मेरी एक दिन की छुट्टी है, next Wednesday।
+neha: Karthik, तुम्हारी छुट्टी में offline sync का backend कौन देखेगा?
+karthik: मैं handover note लिख दूँगा, और Rahul को sync API के बारे में brief कर दूँगा। Rahul, तुम्हें backend में कोई problem तो नहीं?
+rahul: नहीं, थोड़ा बहुत Node मैं कर लेता हूँ। बस critical चीज़ें मुझे document करके दे देना।
+karthik: Done. मैं Thursday तक handover note लिख दूँगा। {action: Write handover note for offline sync and brief Rahul before leave; due: Thursday}
+neha: Okay. अब release date। मेरा proposal है कि Play Store release next Thursday को हो।
+sneha: अगर Thursday release है, तो code freeze Tuesday evening तक चाहिए। मुझे regression testing के लिए पूरे दो दिन चाहिए, खासकर offline mode की वजह से।
+rahul: Tuesday evening थोड़ा tight है, पर हो जाएगा, अगर UI का design आज final हो जाए।
+ayesha: Design आज final है। मैं Figma link lunch से पहले share कर देती हूँ। {action: Share the final Figma for the offline review badge and credit limit screens; due: before lunch today}
+neha: Great. तो decision ये रहा। Code freeze Tuesday evening, और Play Store release next Thursday।
+sneha: और अगर offline mode में critical bug मिला, तो?
+neha: तो हम offline mode को feature flag के पीछे रखकर release करेंगे, और flag पहले दस stores के लिए on करेंगे। पूरी release रोकेंगे नहीं।
+karthik: हाँ, ये safe है। Feature flag मैं already लगा देता हूँ।
+
+## Wrap-up
+neha: Okay, जल्दी से recap कर देती हूँ।
+neha: पहला, sprint twenty three का main goal है offline mode को ship करना। Conflicts के लिए last write wins, और एक minute के अंदर वाले conflicts manual review में। Estimate thirteen points।
+neha: दूसरा, credit limit stretch goal है। अगर कुछ slip हुआ, तो वो पहले drop होगा।
+neha: तीसरा, WhatsApp duplicate notifications P one है, Karthik Wednesday तक fix करेगा।
+neha: और चौथा, code freeze Tuesday evening, release next Thursday, और offline mode feature flag के पीछे रहेगा।
+neha: मैं ये सब Slack पे आज शाम तक post कर देती हूँ। {action: Post the sprint 23 plan and decisions on Slack; due: this evening}
+ayesha: Thanks Neha. Short और useful meeting थी।
+rahul: हाँ, और आज पहली बार हम time से पहले खत्म कर रहे हैं।
+sneha: मैंने time track किया। चालीस minutes।
+karthik: Record है। इसे celebrate करना चाहिए।
+neha: Celebrate release के बाद करेंगे। चलो guys, thank you, बाद में मिलते हैं।

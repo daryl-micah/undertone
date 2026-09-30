@@ -1,0 +1,15 @@
+{
+  "id": "00000000-0000-4000-8000-000000000020",
+  "title": "Sprint 23 planning",
+  "platform": "meet",
+  "started_at": "2026-09-30T05:00:00Z",
+  "language": "hi-IN",
+  "transcribe": true,
+  "participants": [
+    { "key": "neha",    "name": "Neha Kulkarni", "email": "neha@mandi.app",    "voice": "shreya", "color": "violet", "is_host": true },
+    { "key": "karthik", "name": "Karthik Rao",   "email": "karthik@mandi.app", "voice": "tarun",  "color": "teal" },
+    { "key": "ayesha",  "name": "Ayesha Khan",   "email": "ayesha@mandi.app",  "voice": "suhani", "color": "rose" },
+    { "key": "rahul",   "name": "Rahul Verma",   "email": "rahul@mandi.app",   "voice": "mohit",  "color": "amber" },
+    { "key": "sneha",   "name": "Sneha Iyer",    "email": "sneha@mandi.app",   "voice": "tanya",  "color": "sky" }
+  ]
+}

@@ -13,6 +13,13 @@
 // the clips are laid end to end with short pauses, so every segment's start/end ms
 // is exact. The timeline is encoded to one MP3 and loaded into Supabase, replacing
 // any previous copy of the meeting.
+//
+// Meetings with "transcribe": true in their JSON (the Hinglish one) don't use the
+// script as the transcript: the MP3 goes through Sarvam batch STT (saaras:v3,
+// codemix, diarization; cached in media/stt-cache/), diarized speakers are mapped
+// to the cast by overlap with the voicing timeline, and that output is stored.
+// Chapters and action items still come from the script timeline. Every meeting
+// then gets the shared Hinglish step (Hindi ratio, romanized + English lines).
 
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -20,9 +27,11 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import ffmpegPath from "ffmpeg-static";
+import { processLanguage } from "../src/lib/hinglish.mjs";
+import { STT_MODEL, textToSpeech, transcribeCodemix } from "../src/lib/sarvam.mjs";
 
 const SAMPLE_RATE = 22050;
-const TTS_MODEL = "bulbul:v3";
+const TTS_MODEL = "bulbul:v3"; // part of the TTS cache key
 const CONCURRENCY = 4;
 const OFFLINE_WPM = 160; // measured average for bulbul:v3 voices
 
@@ -33,6 +42,7 @@ if (!slug) {
 }
 
 const meta = JSON.parse(await readFile(`seed/meetings/${slug}.json`, "utf8"));
+const LANGUAGE = meta.language ?? "en-IN";
 const { lines, chapters } = parseScript(await readFile(`seed/meetings/${slug}.script`, "utf8"), meta);
 console.log(`${slug}: ${lines.length} lines, ${chapters.length} chapters, ${meta.participants.length} people`);
 
@@ -44,7 +54,9 @@ const mp3Path = `media/${slug}.mp3`;
 await encodeMp3(pcm, mp3Path);
 console.log(`audio: ${mp3Path} (${(durationMs / 60000).toFixed(1)} min)`);
 
-if (!flags.includes("--no-load")) await load(meta, lines, chapters, timings, durationMs, mp3Path);
+const transcript = meta.transcribe ? await transcribe(mp3Path, lines, timings, meta) : null;
+
+if (!flags.includes("--no-load")) await load(meta, lines, chapters, timings, durationMs, mp3Path, transcript);
 
 // ---------------------------------------------------------------------------
 
@@ -108,37 +120,82 @@ async function voiceAll(lines, meta) {
 }
 
 async function synth(text, voice, pace) {
-  const key = createHash("sha1").update(JSON.stringify([TTS_MODEL, voice, pace, SAMPLE_RATE, text])).digest("hex");
+  // Language joins the key only for non-English meetings, so English clips cached
+  // before Hinglish support keep their keys (re-voicing them would cost credits).
+  const keyParts = [TTS_MODEL, voice, pace, SAMPLE_RATE, text, ...(LANGUAGE === "en-IN" ? [] : [LANGUAGE])];
+  const key = createHash("sha1").update(JSON.stringify(keyParts)).digest("hex");
   const file = `media/tts-cache/${key}.wav`;
   if (existsSync(file)) return wavToPcm(await readFile(file));
   if (offline) return null;
 
-  for (let attempt = 1; ; attempt++) {
-    const res = await fetch("https://api.sarvam.ai/text-to-speech", {
-      method: "POST",
-      headers: { "api-subscription-key": process.env.SARVAM_API_KEY, "content-type": "application/json" },
-      body: JSON.stringify({
-        text,
-        language_code: "en-IN",
-        model: TTS_MODEL,
-        speaker: voice,
-        pace,
-        speech_sample_rate: SAMPLE_RATE,
-        output_audio_codec: "wav",
-      }),
+  const wav = await textToSpeech({ text, voice, languageCode: LANGUAGE, pace, sampleRate: SAMPLE_RATE });
+  await writeFile(file, wav);
+  return wavToPcm(wav);
+}
+
+// Transcribe the voiced MP3 and attribute each diarized speaker to the cast member
+// whose voiced lines overlap it most. Reports how much speech that mapping gets
+// right against the script, as an honest check on diarization.
+async function transcribe(mp3Path, lines, timings, meta) {
+  const mp3 = await readFile(mp3Path);
+  const hash = createHash("sha1").update(STT_MODEL).update("codemix").update(mp3).digest("hex").slice(0, 16);
+  const cacheFile = `media/stt-cache/${slug}-${hash}.json`;
+  let result;
+  if (existsSync(cacheFile)) {
+    result = JSON.parse(await readFile(cacheFile, "utf8"));
+    console.log(`stt: cached ${cacheFile}`);
+  } else {
+    if (offline) throw new Error(`${slug} is transcribed from audio and has no cached transcript; run without --offline`);
+    result = await transcribeCodemix({
+      audio: mp3,
+      fileName: `${slug}.mp3`,
+      numSpeakers: meta.participants.length,
+      progress: (m) => console.log(`stt: ${m}`),
     });
-    if (res.ok) {
-      const wav = Buffer.from((await res.json()).audios.join(""), "base64");
-      await writeFile(file, wav);
-      return wavToPcm(wav);
-    }
-    const body = await res.text();
-    if ((res.status === 429 || res.status >= 500) && attempt < 6) {
-      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
-      continue;
-    }
-    throw new Error(`Sarvam TTS ${res.status}: ${body.slice(0, 500)}`);
+    await mkdir("media/stt-cache", { recursive: true });
+    await writeFile(cacheFile, JSON.stringify(result, null, 2));
   }
+
+  const entries = result.entries
+    .map((e) => ({
+      speakerId: String(e.speaker_id),
+      start: Math.round(e.start_time_seconds * 1000),
+      end: Math.round(e.end_time_seconds * 1000),
+      text: (e.transcript ?? "").trim(),
+    }))
+    .filter((e) => e.text && e.end > e.start);
+  if (!entries.length) throw new Error("STT returned no diarized entries");
+
+  const overlap = (a, b) => Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start));
+  const votes = {};
+  for (const e of entries) {
+    lines.forEach((l, i) => {
+      const ms = overlap(e, timings[i]);
+      if (!ms) return;
+      votes[e.speakerId] ??= {};
+      votes[e.speakerId][l.speaker] = (votes[e.speakerId][l.speaker] ?? 0) + ms;
+    });
+  }
+  const castOf = Object.fromEntries(
+    Object.entries(votes).map(([id, v]) => [id, Object.entries(v).sort((a, b) => b[1] - a[1])[0][0]]),
+  );
+
+  let agreed = 0;
+  let total = 0;
+  for (const e of entries) {
+    lines.forEach((l, i) => {
+      const ms = overlap(e, timings[i]);
+      total += ms;
+      if (castOf[e.speakerId] === l.speaker) agreed += ms;
+    });
+  }
+  const names = Object.fromEntries(meta.participants.map((p) => [p.key, p.name]));
+  console.log(
+    `stt: ${entries.length} segments, ${Object.keys(castOf).length} diarized speakers -> ` +
+      Object.entries(castOf).map(([id, key]) => `${id}=${names[key]}`).join(", "),
+  );
+  console.log(`stt: speaker mapping matches the script for ${((agreed / (total || 1)) * 100).toFixed(1)}% of speech`);
+  return entries.map((e) => ({ ...e, speaker: castOf[e.speakerId] ?? null }));
 }
 
 // Mono 16-bit PCM from a WAV buffer; checks the format rather than assuming it.
@@ -199,7 +256,7 @@ function encodeMp3(pcm, out) {
   });
 }
 
-async function load(meta, lines, chapters, timings, durationMs, mp3Path) {
+async function load(meta, lines, chapters, timings, durationMs, mp3Path, transcript) {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
@@ -229,7 +286,8 @@ async function load(meta, lines, chapters, timings, durationMs, mp3Path) {
   );
 
   const talk = {};
-  lines.forEach((l, i) => (talk[l.speaker] = (talk[l.speaker] ?? 0) + timings[i].end - timings[i].start));
+  if (transcript) transcript.forEach((e) => e.speaker && (talk[e.speaker] = (talk[e.speaker] ?? 0) + e.end - e.start));
+  else lines.forEach((l, i) => (talk[l.speaker] = (talk[l.speaker] ?? 0) + timings[i].end - timings[i].start));
   const people = must(
     await supabase
       .from("participants")
@@ -249,15 +307,25 @@ async function load(meta, lines, chapters, timings, durationMs, mp3Path) {
   const idOf = Object.fromEntries(meta.participants.map((p) => [p.key, people.find((x) => x.name === p.name).id]));
   const labelOf = Object.fromEntries(meta.participants.map((p, i) => [p.key, `SPEAKER_${String(i).padStart(2, "0")}`]));
 
-  const segments = lines.map((l, i) => ({
-    meeting_id: meta.id,
-    seq: i + 1,
-    participant_id: idOf[l.speaker],
-    speaker_label: labelOf[l.speaker],
-    start_ms: timings[i].start,
-    end_ms: timings[i].end,
-    text: l.text,
-  }));
+  const segments = transcript
+    ? transcript.map((e, i) => ({
+        meeting_id: meta.id,
+        seq: i + 1,
+        participant_id: e.speaker ? idOf[e.speaker] : null,
+        speaker_label: `SPEAKER_${e.speakerId}`,
+        start_ms: e.start,
+        end_ms: e.end,
+        text: e.text,
+      }))
+    : lines.map((l, i) => ({
+        meeting_id: meta.id,
+        seq: i + 1,
+        participant_id: idOf[l.speaker],
+        speaker_label: labelOf[l.speaker],
+        start_ms: timings[i].start,
+        end_ms: timings[i].end,
+        text: l.text,
+      }));
   for (let i = 0; i < segments.length; i += 500) {
     must(await supabase.from("transcript_segments").insert(segments.slice(i, i + 500)));
   }
@@ -300,4 +368,7 @@ async function load(meta, lines, chapters, timings, durationMs, mp3Path) {
   );
 
   console.log(`loaded ${meta.title}: ${segments.length} segments, ${chapters.length} chapters, ${actions.length} action items`);
+
+  const lang = await processLanguage(supabase, meta.id, (m) => console.log(`language: ${m}`));
+  console.log(`language: ${lang.mix}, ${(lang.ratio * 100).toFixed(0)}% Hindi, ${lang.converted} lines romanized + translated`);
 }
