@@ -114,11 +114,17 @@ This is the core screen, built against the hero meeting from day one.
 - **Where highlights appear:** on the scrubber, in a Highlights tab on the meeting, and in a global Highlights library across meetings. That library answers "see where it lands".
 - **Each highlight** has a title, note, author name and transcript excerpt, and plays as a bounded clip.
 
-## Phase 6: Search across meetings
-- **Engine:** Postgres full-text search over `transcript_segments`, `summaries` and `highlights`.
-- **Results:** grouped by meeting, with the matching line, speaker and timestamp. Clicking a result opens the meeting **at that second**.
-- **Filters:** participant, date range, platform.
-- **Stretch:** "Ask across meetings", answering questions from search results with citations.
+## Phase 6: Search across meetings ✅
+- **Engine:** Postgres full-text search through RPCs (`search_transcripts`, `search_highlights`, in `supabase/migrations/20261001000000_search.sql`).
+  - Every typed word becomes a prefix term, so "reconcile" finds "reconciliation" (their stems differ) and search works mid-word. That gives 49 hits instead of 4 for plain stemming.
+  - `ts_headline` marks the matched words, including stemmed matches.
+- **`/search`:** results are grouped by meeting, most matches first. Each hit shows the speaker, the time and the highlighted line, with "Show N more" for the rest.
+  - A hit opens the meeting at that second, with the term already in the transcript search: `?t=…&q=…`.
+  - Matching highlights are listed above the transcript hits.
+- **Filters:** said-by (speaker of the line), platform and date range. The URL is the state, so a search is linkable and results are server-rendered.
+- **Header search** on every page; "/" focuses it.
+- **Not searched:** summaries, whose content comes from the transcript, so their hits would duplicate transcript hits.
+- **Deferred:** "Ask across meetings" (cited answers with Groq). It's the next thing to add if time allows.
 
 ## Phase 7: Sharing with someone not on the call
 - **Share links:** "Share" on a highlight or meeting creates a `share_links` token.

@@ -6,6 +6,7 @@ import type {
   Highlight,
   MediaAsset,
   Meeting,
+  MeetingPlatform,
   Participant,
   Summary,
   SummaryTemplate,
@@ -49,6 +50,62 @@ export async function listHighlights(): Promise<HighlightListItem[]> {
     ...h,
     meeting_title: meetings.title,
   }));
+}
+
+export interface TranscriptHit {
+  meeting_id: string;
+  meeting_title: string;
+  meeting_started_at: string | null;
+  platform: MeetingPlatform;
+  seq: number;
+  start_ms: number;
+  speaker_name: string;
+  speaker_color: string | null;
+  headline: string; // matched words wrapped in « »
+}
+
+export interface HighlightHit {
+  id: string;
+  meeting_id: string;
+  meeting_title: string;
+  start_ms: number;
+  end_ms: number;
+  title: string | null;
+  excerpt: string | null;
+  created_by_name: string;
+}
+
+export interface SearchFilters {
+  speaker?: string;
+  platform?: MeetingPlatform;
+  from?: string; // YYYY-MM-DD
+  to?: string; // YYYY-MM-DD, inclusive
+}
+
+export async function search(q: string, f: SearchFilters) {
+  const client = db();
+  const dayAfter = (d: string) => new Date(Date.parse(d) + 86_400_000).toISOString();
+  const [transcripts, highlights] = await Promise.all([
+    client.rpc("search_transcripts", {
+      q,
+      speaker: f.speaker ?? null,
+      platform_filter: f.platform ?? null,
+      from_date: f.from ? new Date(f.from).toISOString() : null,
+      to_date: f.to ? dayAfter(f.to) : null,
+    }),
+    // Highlights only honour the text query; the filters are about who said what.
+    f.speaker || f.platform || f.from || f.to ? Promise.resolve({ data: [], error: null }) : client.rpc("search_highlights", { q }),
+  ]);
+  if (transcripts.error) throw transcripts.error;
+  if (highlights.error) throw highlights.error;
+  return { transcripts: transcripts.data as TranscriptHit[], highlights: highlights.data as HighlightHit[] };
+}
+
+/** Everyone who has spoken in any meeting, for the "said by" filter. */
+export async function listSpeakers(): Promise<string[]> {
+  const { data, error } = await db().from("participants").select("name");
+  if (error) throw error;
+  return [...new Set(data.map((p) => p.name as string))].sort();
 }
 
 // Supabase caps every response at 1000 rows server-side, and an hour-long call

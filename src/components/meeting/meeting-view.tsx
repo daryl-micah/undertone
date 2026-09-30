@@ -57,6 +57,7 @@ export function MeetingView({
   highlights: initialHighlights,
   initialMs,
   initialClipId,
+  initialQuery = "",
 }: {
   meetingId: string;
   templates: SummaryTemplate[];
@@ -70,12 +71,13 @@ export function MeetingView({
   highlights: Highlight[];
   initialMs: number;
   initialClipId?: string;
+  initialQuery?: string;
 }) {
   const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const [ms, setMs] = useState(initialMs);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [highlights, setHighlights] = useState(initialHighlights);
   const [composer, setComposer] = useState<{ start: number; end: number } | null>(null);
   // A clip plays a bounded range and stops at its end.

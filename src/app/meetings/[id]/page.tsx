@@ -70,6 +70,7 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
         highlights={highlights}
         initialMs={Math.min(initialMs, durationMs)}
         initialClipId={clip?.id}
+        initialQuery={typeof query.q === "string" ? query.q : ""}
       />
     </div>
   );
