@@ -1,5 +1,21 @@
 # Plan: Fathom rebuild (`undertone`)
 
+## The pitch
+
+**Undertone is a Fathom-style notetaker built for how Indian teams actually talk: Hindi and English mixed mid-sentence.**
+
+A stand-up in Bengaluru doesn't happen in English. It happens in Hinglish: "यार, ये ticket अभी भी blocked है, backend से API contract नहीं आया।" Fathom's transcription, summaries and search are built for one language at a time, so they mangle this. Hindi words get transliterated into nonsense, summaries lose half the meaning, and you can't search for what was said.
+
+Undertone handles it end to end:
+- The transcript keeps what was said as it was said: Hindi in Devanagari, English in Latin script.
+- Every line can also be read as romanized Hinglish (the way people type it) or in English.
+- Search finds a line whether you type the Hindi, the romanized version or the English meaning.
+- Summaries and action items are always in English, and still cite the exact moment.
+
+Everything else in this plan, the synced playback, summaries, highlights, search and sharing, is the Fathom baseline that the Hinglish support sits on.
+
+> **Numbering note:** Hinglish support was inserted as Phase 5 on 2026-10-01, after Phases 1–6 were built. Highlights and search moved to Phases 6 and 7. Commit messages up to `bb7a88b` use the old numbers ("Phase 5: highlights", "Phase 6: search").
+
 ## What we're building and why in this order
 
 Fathom's value is what happens **after** the call: watching the recording next to a transcript, reading a summary you can trust, pulling action items, clipping a moment and sending it to someone who wasn't there. The recording bot is plumbing. It's also the hardest and least differentiating part to rebuild, so **we fake the capture layer** and say so openly in the walkthrough. The time goes into the post-meeting experience.
@@ -13,7 +29,7 @@ The case the brief calls out is the **8-person, 60-minute call**. That's where n
 - **Auth, workspaces, permissions.** There's one shared demo space, and a viewer's display name is typed in, not authenticated.
 - **CRM sync** (HubSpot/Salesforce), Slack posting, billing, mobile apps.
 - **Live, in-call transcription.** Everything is processed after the call.
-- **Real calendar OAuth.** This is Phase 8, and only if there's time. Stubbed until then.
+- **Real calendar OAuth.** This is Phase 9, and only if there's time. Stubbed until then.
 
 ---
 
@@ -78,7 +94,7 @@ You listed meetings, participants, summaries, transcripts and highlights. The **
 
 > **Open decision (yours):** video vs. audio for seeded meetings. Real video for an 8-person, hour-long call isn't feasible to fake. **I recommend audio plus a client-rendered speaker grid** (tiles that light up for the active speaker, driven by the segments). It reads like a meeting recording and scales to 8 people. Uploaded real recordings play their actual video.
 
-## Phase 3: Meeting page — playback against the transcript
+## Phase 3: Meeting page — playback against the transcript ✅
 This is the core screen, built against the hero meeting from day one.
 - **Player:** custom controls, 1× / 1.5× / 2× speed, keyboard shortcuts (space, ←/→ 5 s, J/K/L).
 - **Transcript** synced to playback:
@@ -107,14 +123,33 @@ This is the core screen, built against the hero meeting from day one.
   - A cross-meeting `/action-items` page groups them by owner, with Open / Done / All filters, and links to the moment each was said.
   - **Cut:** reassigning. **Deferred:** AI extraction. Seeded meetings carry their action items from the script, so extraction only matters for uploads and belongs with the upload path.
 
-## Phase 5: Highlights and clips
+## Phase 5: Hinglish support
+The main differentiator. Built on top of Phases 1–4 and threaded through everything after.
+
+1. **Schema.**
+   - `transcript_segments`: `text_romanized`, `text_english` (nullable) and `hindi_ratio` (0–1).
+   - `meetings`: `language_mix` (`en`, `hi-en` or `hi`) and `hindi_ratio`.
+   - `tsv` is rebuilt as `english(coalesce(text_english, text)) || simple(text || text_romanized)`, and `search_transcripts` matches a query under both configs. So "deadline" finds a Hindi line whose translation says deadline, and "kal" or "कल" find the line directly.
+2. **A seeded Hinglish meeting:** a 4–5 person sprint planning at a Bengaluru startup, 10–15 minutes, written as people actually speak (Hindi in Devanagari, English in Latin script), with decisions, owners and action items.
+   - Voiced with Sarvam `bulbul:v3` Hindi (`hi-IN`) voices.
+   - **The script is not the transcript.** The audio is transcribed with Sarvam STT (`saaras:v3`, `codemix` mode, diarization), and that output is stored as the segments. Diarized speakers are mapped to the cast by overlap with the known voicing timeline. This is the honest test of whether the pipeline handles real code-mixed speech.
+   - The script is saved in `seed/meetings/` for a naturalness review **before** anything is voiced.
+3. **Transliteration and translation:** every segment with Hindi gets `text_romanized` and `text_english` from Groq, batched with strict JSON and exactly one output per input id. It shares the rate-limit retry logic. One shared function serves the seed pipeline and the upload path.
+4. **Summaries:** Hinglish meetings feed `text_english` into the existing map-reduce, still citing original line numbers. Summaries are always in English.
+5. **UI:**
+   - A **Mixed / Romanized / English** transcript toggle, only when `language_mix = 'hi-en'`, persisted in the URL (`?script=`).
+   - A language badge on meeting cards ("Hinglish · 55% Hindi"), and the Hinglish meeting pinned first on the home page.
+   - Highlight excerpts respect the same toggle. The share pages in Phase 8 will too.
+6. **Upload path:** a real recording goes through the same pipeline: `saaras:v3` in `codemix` mode, then transliteration and translation.
+
+## Phase 6: Highlights and clips ✅
 - **Two ways to highlight:**
   - Press `H` or click the button while watching. This marks from 15 s back to now, adjustable.
   - Select text in the transcript to set an exact range.
 - **Where highlights appear:** on the scrubber, in a Highlights tab on the meeting, and in a global Highlights library across meetings. That library answers "see where it lands".
 - **Each highlight** has a title, note, author name and transcript excerpt, and plays as a bounded clip.
 
-## Phase 6: Search across meetings ✅
+## Phase 7: Search across meetings ✅
 - **Engine:** Postgres full-text search through RPCs (`search_transcripts`, `search_highlights`, in `supabase/migrations/20261001000000_search.sql`).
   - Every typed word becomes a prefix term, so "reconcile" finds "reconciliation" (their stems differ) and search works mid-word. That gives 49 hits instead of 4 for plain stemming.
   - `ts_headline` marks the matched words, including stemmed matches.
@@ -126,18 +161,18 @@ This is the core screen, built against the hero meeting from day one.
 - **Not searched:** summaries, whose content comes from the transcript, so their hits would duplicate transcript hits.
 - **Deferred:** "Ask across meetings" (cited answers with Groq). It's the next thing to add if time allows.
 
-## Phase 7: Sharing with someone not on the call
+## Phase 8: Sharing with someone not on the call
 - **Share links:** "Share" on a highlight or meeting creates a `share_links` token.
 - **Public page** at `/s/[token]`, needing no account:
   - It plays only the clip's range, shows the transcript excerpt and speaker names, and links to "open full meeting" if the share allows it.
   - It has proper Open Graph tags, so a pasted link shows a preview card.
 - **Views:** a view counter on the share.
 
-## Phase 8: Home, calendar, notetaker states
+## Phase 9: Home, calendar, notetaker states
 - **Meetings home:** "Upcoming" (from `calendar_events`) with per-meeting "Notetaker will join" toggles, plus "Recent" with status chips, duration, participants and a summary preview.
 - **Calendar connect:** stubbed. "Connect Google Calendar" loads realistic sample events. Real Google OAuth only if time allows.
 
-## Phase 9: Polish and walkthrough
+## Phase 10: Polish and walkthrough
 - **Loading, empty and error states:**
   - A meeting still processing.
   - A summary that failed.
@@ -150,10 +185,11 @@ This is the core screen, built against the hero meeting from day one.
 ---
 
 ## Cut order if time runs short
-Cut from the bottom: 8 → Ask-across-meetings → upload path → cross-meeting action items view.
+Cut from the bottom: 9 → Ask-across-meetings → upload path → cross-meeting action items view.
 
 **Never cut:**
 - the hero meeting (Phase 2)
 - synced playback (Phase 3)
 - summary with timestamped bullets (Phase 4)
-- highlight → share (Phases 5 and 7)
+- Hinglish transcript, toggle and search (Phase 5): it's the pitch
+- highlight → share (Phases 6 and 8)
