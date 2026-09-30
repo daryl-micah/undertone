@@ -2,6 +2,8 @@
 //
 //   node --env-file=.env.local scripts/seed-meeting.mjs <slug>            voice + load
 //   node --env-file=.env.local scripts/seed-meeting.mjs <slug> --no-load  voice only
+//   node --env-file=.env.local scripts/seed-meeting.mjs <slug> --offline  no API calls: uncached
+//     lines become silence of their estimated spoken length (for building UI without credits)
 //
 // Reads seed/meetings/<slug>.json (meta + cast) and seed/meetings/<slug>.script:
 //   ## Chapter title
@@ -22,10 +24,11 @@ import ffmpegPath from "ffmpeg-static";
 const SAMPLE_RATE = 22050;
 const TTS_MODEL = "bulbul:v3";
 const CONCURRENCY = 4;
+const OFFLINE_WPM = 160; // measured average for bulbul:v3 voices
 
 const [slug, ...flags] = process.argv.slice(2);
 if (!slug) {
-  console.error("usage: seed-meeting.mjs <slug> [--no-load]");
+  console.error("usage: seed-meeting.mjs <slug> [--no-load] [--offline]");
   process.exit(1);
 }
 
@@ -33,6 +36,7 @@ const meta = JSON.parse(await readFile(`seed/meetings/${slug}.json`, "utf8"));
 const { lines, chapters } = parseScript(await readFile(`seed/meetings/${slug}.script`, "utf8"), meta);
 console.log(`${slug}: ${lines.length} lines, ${chapters.length} chapters, ${meta.participants.length} people`);
 
+const offline = flags.includes("--offline");
 const clips = await voiceAll(lines, meta);
 const { pcm, timings } = layOut(lines, clips, chapters);
 const durationMs = Math.round((pcm.length / 2 / SAMPLE_RATE) * 1000);
@@ -78,21 +82,28 @@ function parseScript(text, meta) {
 }
 
 async function voiceAll(lines, meta) {
-  if (!process.env.SARVAM_API_KEY) throw new Error("SARVAM_API_KEY is not set");
+  if (!offline && !process.env.SARVAM_API_KEY) throw new Error("SARVAM_API_KEY is not set");
   await mkdir("media/tts-cache", { recursive: true });
   const voiceOf = Object.fromEntries(meta.participants.map((p) => [p.key, p]));
   const clips = new Array(lines.length);
   let next = 0;
   let done = 0;
+  let missing = 0;
   async function worker() {
     while (next < lines.length) {
       const i = next++;
       const p = voiceOf[lines[i].speaker];
       clips[i] = await synth(lines[i].text, p.voice, p.pace ?? 1.0);
+      if (!clips[i]) {
+        missing++;
+        const ms = (lines[i].text.split(/\s+/).length / OFFLINE_WPM) * 60000;
+        clips[i] = Buffer.alloc(Math.round((ms / 1000) * SAMPLE_RATE) * 2);
+      }
       if (++done % 25 === 0 || done === lines.length) console.log(`voiced ${done}/${lines.length}`);
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  if (missing) console.log(`offline: ${missing} uncached lines are silent placeholders`);
   return clips;
 }
 
@@ -100,6 +111,7 @@ async function synth(text, voice, pace) {
   const key = createHash("sha1").update(JSON.stringify([TTS_MODEL, voice, pace, SAMPLE_RATE, text])).digest("hex");
   const file = `media/tts-cache/${key}.wav`;
   if (existsSync(file)) return wavToPcm(await readFile(file));
+  if (offline) return null;
 
   for (let attempt = 1; ; attempt++) {
     const res = await fetch("https://api.sarvam.ai/text-to-speech", {

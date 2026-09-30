@@ -87,7 +87,7 @@ This is the core screen, built against the hero meeting from day one.
 - **Speaker timeline:** a lane per participant under the scrubber showing when each person spoke, plus talk-time percentages. With 8 people this is how you see who dominated.
 - **Chapters** mark the scrubber and appear as a jumpable list.
 - **Scale:**
-  - The transcript list is **virtualized** (thousands of segments).
+  - The transcript is **not virtualized**, a deliberate change from the original plan. Even a dense hour is about 400–1,500 lines, and memoized turn blocks re-render only when the active line changes. Virtualizing variable-height rows would make jumping to a distant search match or `?t=` link unreliable.
   - Speaker colors come from a fixed 8+ color palette that stays readable in light and dark mode.
   - Consecutive lines by the same speaker are grouped.
 - **In-meeting search:** matches are highlighted, with next/prev stepping and match markers on the timeline.

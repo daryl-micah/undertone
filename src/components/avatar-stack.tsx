@@ -16,7 +16,7 @@ export function AvatarStack({
         <span
           key={p.id}
           title={p.name}
-          className="grid h-7 w-7 place-items-center rounded-full text-[10px] font-semibold text-white ring-2 ring-surface"
+          className="grid h-7 w-7 place-items-center rounded-full text-[10px] font-semibold text-on-spk ring-2 ring-surface"
           style={{ background: speakerColor(p.color, i) }}
         >
           {initials(p.name)}
