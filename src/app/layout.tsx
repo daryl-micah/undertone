@@ -33,12 +33,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>
               Undertone
             </Link>
-            <nav className="flex items-center gap-4 text-sm text-muted">
+            <nav className="flex items-center gap-4 whitespace-nowrap text-sm text-muted">
               <Link href="/" className="hover:text-text">
                 Meetings
               </Link>
+              <Link href="/action-items" className="hover:text-text">
+                Action items
+              </Link>
             </nav>
-            <span className="ml-auto rounded-full border border-border px-2.5 py-0.5 text-xs text-muted">
+            <span className="ml-auto hidden rounded-full border border-border px-2.5 py-0.5 text-xs text-muted sm:inline">
               Demo workspace
             </span>
           </div>

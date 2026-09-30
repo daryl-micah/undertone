@@ -1,14 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { ActionItemCheck } from "@/components/action-item-check";
 import { formatDuration, formatTimestamp } from "@/lib/format";
 import { speakerColor } from "@/lib/speakers";
-import type { ActionItem, Chapter, Highlight } from "@/lib/types";
+import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate } from "@/lib/types";
 import type { ViewParticipant } from "./meeting-view";
+import { SummaryPanel } from "./summary-panel";
 
-type Tab = "chapters" | "actions" | "highlights" | "speakers";
+type Tab = "summary" | "chapters" | "actions" | "highlights" | "speakers";
 
 export function Panels({
+  meetingId,
+  templates,
+  summaries,
   ms,
   durationMs,
   participants,
@@ -17,6 +22,9 @@ export function Panels({
   highlights,
   onSeek,
 }: {
+  meetingId: string;
+  templates: SummaryTemplate[];
+  summaries: Summary[];
   ms: number;
   durationMs: number;
   participants: ViewParticipant[];
@@ -25,8 +33,10 @@ export function Panels({
   highlights: Highlight[];
   onSeek: (ms: number, play?: boolean) => void;
 }) {
-  const [tab, setTab] = useState<Tab>("chapters");
-  const tabs: { key: Tab; label: string; count: number }[] = [
+  const [tab, setTab] = useState<Tab>("summary");
+  const [copied, setCopied] = useState(false);
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: "summary", label: "Summary" },
     { key: "chapters", label: "Chapters", count: chapters.length },
     { key: "actions", label: "Action items", count: actionItems.length },
     { key: "highlights", label: "Highlights", count: highlights.length },
@@ -49,12 +59,16 @@ export function Panels({
             }`}
           >
             {t.label}
-            <span className="ml-1.5 text-xs text-muted">{t.count}</span>
+            {t.count != null && <span className="ml-1.5 text-xs text-muted">{t.count}</span>}
           </button>
         ))}
       </div>
 
       <div className="p-2">
+        {tab === "summary" && (
+          <SummaryPanel meetingId={meetingId} templates={templates} initialSummaries={summaries} onSeek={onSeek} />
+        )}
+
         {tab === "chapters" && (
           <ul>
             {chapters.map((c) => (
@@ -68,18 +82,46 @@ export function Panels({
 
         {tab === "actions" &&
           (actionItems.length ? (
-            <ul>
-              {actionItems.map((a) => (
-                <Row key={a.id} onClick={() => a.source_ms != null && onSeek(a.source_ms, true)} time={a.source_ms}>
-                  <span className="flex-1">
-                    {a.text}
-                    <span className="block text-xs text-muted">
-                      {[a.assignee_name, a.due_hint].filter(Boolean).join(" · ")}
+            <>
+              <ul>
+                {actionItems.map((a) => (
+                  <li key={a.id} className="flex items-start gap-3 rounded-lg px-2 py-2 text-sm hover:bg-surface-2">
+                    <ActionItemCheck id={a.id} completedAt={a.completed_at} label={a.text} />
+                    <span className="flex-1 peer-checked:text-muted peer-checked:line-through">
+                      {a.text}
+                      <span className="block text-xs text-muted no-underline">
+                        {[a.assignee_name, a.due_hint].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
-                  </span>
-                </Row>
-              ))}
-            </ul>
+                    {a.source_ms != null && (
+                      <button
+                        onClick={() => onSeek(a.source_ms!, true)}
+                        className="shrink-0 font-mono text-xs text-muted hover:text-accent"
+                        aria-label={`Play from ${formatTimestamp(a.source_ms)}`}
+                      >
+                        {formatTimestamp(a.source_ms)}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex justify-end border-t border-border px-2 pt-2">
+                <button
+                  onClick={() => {
+                    const text = actionItems
+                      .map((a) => `- [ ] ${a.assignee_name ? `${a.assignee_name}: ` : ""}${a.text}${a.due_hint ? ` (${a.due_hint})` : ""}`)
+                      .join("\n");
+                    void navigator.clipboard.writeText(text).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    });
+                  }}
+                  className="rounded-md border border-border px-2.5 py-1 text-xs hover:bg-surface-2"
+                >
+                  {copied ? "Copied" : "Copy list"}
+                </button>
+              </div>
+            </>
           ) : (
             <Empty>No action items from this meeting.</Empty>
           ))}

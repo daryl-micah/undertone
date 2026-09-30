@@ -7,6 +7,8 @@ import type {
   MediaAsset,
   Meeting,
   Participant,
+  Summary,
+  SummaryTemplate,
   TranscriptSegment,
 } from "./types";
 
@@ -19,6 +21,19 @@ export async function listMeetings(): Promise<MeetingListItem[]> {
     .order("started_at", { ascending: false, nullsFirst: false });
   if (error) throw error;
   return data as MeetingListItem[];
+}
+
+export type ActionItemListItem = ActionItem & { meeting_title: string };
+
+export async function listActionItems(): Promise<ActionItemListItem[]> {
+  const { data, error } = await db()
+    .from("action_items")
+    .select("*, meetings(title, started_at)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as (ActionItem & { meetings: { title: string; started_at: string | null } })[])
+    .sort((a, b) => (b.meetings.started_at ?? "").localeCompare(a.meetings.started_at ?? "") || (a.source_ms ?? 0) - (b.source_ms ?? 0))
+    .map(({ meetings, ...a }) => ({ ...a, meeting_title: meetings.title }));
 }
 
 // Supabase caps every response at 1000 rows server-side, and an hour-long call
@@ -47,6 +62,8 @@ export interface MeetingDetail {
   actionItems: ActionItem[];
   highlights: Highlight[];
   media: (MediaAsset & { url: string })[];
+  templates: SummaryTemplate[];
+  summaries: Summary[];
 }
 
 export async function getMeeting(id: string): Promise<MeetingDetail | null> {
@@ -55,15 +72,17 @@ export async function getMeeting(id: string): Promise<MeetingDetail | null> {
   if (error) throw error;
   if (!meeting) return null;
 
-  const [participants, segments, chapters, actionItems, highlights, media] = await Promise.all([
+  const [participants, segments, chapters, actionItems, highlights, media, templates, summaries] = await Promise.all([
     client.from("participants").select("*").eq("meeting_id", id).order("talk_time_ms", { ascending: false }),
     allSegments(id),
     client.from("chapters").select("*").eq("meeting_id", id).order("start_ms"),
     client.from("action_items").select("*").eq("meeting_id", id).order("source_ms"),
     client.from("highlights").select("*").eq("meeting_id", id).order("start_ms"),
     client.from("media_assets").select("*").eq("meeting_id", id),
+    client.from("summary_templates").select("*").order("sort_order"),
+    client.from("summaries").select("*").eq("meeting_id", id),
   ]);
-  for (const r of [participants, chapters, actionItems, highlights, media]) {
+  for (const r of [participants, chapters, actionItems, highlights, media, templates, summaries]) {
     if (r.error) throw r.error;
   }
 
@@ -75,5 +94,7 @@ export async function getMeeting(id: string): Promise<MeetingDetail | null> {
     actionItems: actionItems.data as ActionItem[],
     highlights: highlights.data as Highlight[],
     media: (media.data as MediaAsset[]).map((m) => ({ ...m, url: mediaUrl(m.storage_path) })),
+    templates: templates.data as SummaryTemplate[],
+    summaries: summaries.data as Summary[],
   };
 }

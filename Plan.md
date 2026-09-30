@@ -92,14 +92,20 @@ This is the core screen, built against the hero meeting from day one.
   - Consecutive lines by the same speaker are grouped.
 - **In-meeting search:** matches are highlighted, with next/prev stepping and match markers on the timeline.
 
-## Phase 4: AI summary, templates, action items
-- **Summaries:** **Groq** API, run server-side and cached in `summaries`. Every bullet carries `source_ms`, so clicking it seeks the player. That's how you trust a summary.
-- **Long meetings:** summarized per chapter first, then combined into the template (map-reduce). Pasting a whole 60-minute transcript into one prompt isn't the plan.
-- **Template switcher:** 4 or 5 templates. A template's first generation streams in; after that, switching is instant from the cache.
+## Phase 4: AI summary, templates, action items ✅
+- **Summaries:** Groq `openai/gpt-oss-120b` with strict JSON-schema output, run server-side and cached in `summaries`. The model cites transcript line numbers and the server maps them to `source_ms`, which is more reliable than asking for timestamps. Every bullet's timestamp chip seeks the player.
+- **Long meetings:** the free tier allows 8,000 tokens per minute, and the hour-long transcript is about 12k tokens, so map-reduce is required, not optional.
+  - Groups of chapters are condensed into cited notes, stored once per meeting in `chapters.summary` (about 2m45s for the hero meeting, paced by the rate limit).
+  - Each template is then one request over those notes (about 4 seconds).
+  - Short meetings go straight from the transcript.
+  - A 429 means wait for `retry-after` and try again.
+- **Template switcher:** 5 templates with per-section instructions, in `supabase/templates.sql` (re-runnable upsert).
+  - The endpoint streams **progress** as NDJSON rather than tokens: the output is structured JSON, and Groq finishes each step in seconds anyway.
+  - General summaries are pre-generated for the seeded meetings.
 - **Action items:**
-  - Extracted with owner, due hint and timestamp.
-  - Can be checked off, reassigned and copied as a list.
-  - A cross-meeting "My action items" view filters by assignee name.
+  - Checked off with immediate saving, and copied as a markdown checklist.
+  - A cross-meeting `/action-items` page groups them by owner, with Open / Done / All filters, and links to the moment each was said.
+  - **Cut:** reassigning. **Deferred:** AI extraction. Seeded meetings carry their action items from the script, so extraction only matters for uploads and belongs with the upload path.
 
 ## Phase 5: Highlights and clips
 - **Two ways to highlight:**

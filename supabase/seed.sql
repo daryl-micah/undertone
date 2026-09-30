@@ -1,23 +1,8 @@
--- Phase 1 seed: summary templates + one small hand-written meeting to prove the
+-- Phase 1 seed: one small hand-written meeting to prove the
 -- pipeline end to end. The realistic seeded meetings (incl. the 8-person hour)
 -- arrive in Phase 2 via scripts/seed.
 
-insert into summary_templates (key, name, description, prompt, sections, sort_order) values
-('general', 'General', 'A balanced recap for any meeting.',
- 'Summarize the meeting for someone who missed it.',
- '[{"key":"purpose","title":"Purpose"},{"key":"takeaways","title":"Key takeaways"},{"key":"topics","title":"Topics"},{"key":"next_steps","title":"Next steps"}]', 1),
-('sales', 'Sales discovery', 'Pain, budget, timeline and decision process from a customer call.',
- 'Summarize this sales call from the seller''s point of view.',
- '[{"key":"pain","title":"Pain points"},{"key":"budget","title":"Budget"},{"key":"timeline","title":"Timeline"},{"key":"decision","title":"Decision process"},{"key":"objections","title":"Objections"},{"key":"next_steps","title":"Next steps"}]', 2),
-('one_on_one', '1:1', 'Wins, blockers, feedback and commitments between two people.',
- 'Summarize this 1:1 between a manager and a report.',
- '[{"key":"wins","title":"Wins"},{"key":"blockers","title":"Blockers"},{"key":"feedback","title":"Feedback"},{"key":"commitments","title":"Commitments"}]', 3),
-('standup', 'Stand-up', 'Per-person yesterday / today / blockers.',
- 'Summarize this stand-up per person.',
- '[{"key":"per_person","title":"Updates by person"},{"key":"blockers","title":"Blockers"}]', 4),
-('decisions', 'Decisions & risks', 'For large planning calls: what was decided, by whom, and what is still open.',
- 'List decisions, open questions and risks, attributing each to the people involved.',
- '[{"key":"decisions","title":"Decisions made"},{"key":"open","title":"Open questions"},{"key":"risks","title":"Risks raised"},{"key":"owners","title":"Owners"}]', 5);
+-- Summary templates live in supabase/templates.sql (re-runnable); run it after this file.
 
 -- Smoke-test meeting (fixed ids so scripts can reference it) --------------------
 

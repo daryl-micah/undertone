@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTimestamp } from "@/lib/format";
-import type { ActionItem, Chapter, Highlight, TranscriptSegment } from "@/lib/types";
+import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate, TranscriptSegment } from "@/lib/types";
 import { Panels } from "./panels";
 import { Stage } from "./stage";
 import { Timeline } from "./timeline";
@@ -44,6 +44,9 @@ function segmentAt(segments: TranscriptSegment[], ms: number) {
 }
 
 export function MeetingView({
+  meetingId,
+  templates,
+  summaries,
   durationMs,
   media,
   participants,
@@ -53,6 +56,9 @@ export function MeetingView({
   highlights,
   initialMs,
 }: {
+  meetingId: string;
+  templates: SummaryTemplate[];
+  summaries: Summary[];
   durationMs: number;
   media: ViewMedia | null;
   participants: ViewParticipant[];
@@ -221,6 +227,9 @@ export function MeetingView({
 
       <div className="min-w-0 lg:col-start-1 lg:row-start-2">
         <Panels
+          meetingId={meetingId}
+          templates={templates}
+          summaries={summaries}
           ms={ms}
           durationMs={durationMs}
           participants={participants}

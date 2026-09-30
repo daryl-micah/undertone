@@ -25,7 +25,7 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
   const t = Number((await props.searchParams).t);
   const initialMs = Number.isFinite(t) && t > 0 ? Math.round(t * 1000) : 0;
 
-  const { meeting, participants, segments, chapters, actionItems, highlights, media } = detail;
+  const { meeting, participants, segments, chapters, actionItems, highlights, media, templates, summaries } = detail;
   const playable = media.find((m) => m.kind === "video") ?? media.find((m) => m.kind === "audio") ?? null;
   const durationMs = meeting.duration_ms ?? segments.at(-1)?.end_ms ?? 0;
 
@@ -48,6 +48,9 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
       </div>
 
       <MeetingView
+        meetingId={meeting.id}
+        templates={templates}
+        summaries={summaries}
         durationMs={durationMs}
         media={playable && { kind: playable.kind, url: playable.url, mime: playable.mime }}
         participants={participants.map((p, index) => ({
