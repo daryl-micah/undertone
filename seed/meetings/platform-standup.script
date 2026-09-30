@@ -1,0 +1,25 @@
+// Daily platform team stand-up.
+
+## Updates
+arjun: Morning everyone. Let's keep it quick. Sameer, do you want to start?
+sameer: Sure. Yesterday I finished the webhook retry changes for the Razorpay migration. They're in review. Today I'm testing the refund flow end to end on staging. No blockers, but I need someone to review the retry PR today, it's blocking the migration.
+arjun: I'll review it right after stand-up. {action: Review Sameer's webhook retry PR for the Razorpay migration; due: today}
+sameer: Thanks.
+arjun: Divya.
+divya: Yesterday I worked on the UPI reference parser. I added the formats for two more banks, so we're at five now. Today I'm going to start on the partial payment matching, at least the data model.
+arjun: How's the narration data looking for the new banks?
+divya: Messy. One bank puts the UPI reference in a different position depending on whether it's a collect request or a push payment. I have a workaround, but I'd love more real samples.
+fatima: I can pull anonymised narration samples from production for the top ten banks. A few hundred each?
+divya: That would be perfect.
+fatima: I'll have them for you by tomorrow. {action: Pull anonymised bank narration samples for the top ten banks for Divya; due: tomorrow}
+arjun: Fatima, while you're here, anything from you?
+fatima: Just that the warehouse migration is on track. The cohort analysis for Meera is going well, I should have a first cut by Monday. And I checked the e-invoicing number. It's about 5,800 accounts that will cross the new threshold, so Arjun's estimate of six thousand was close.
+arjun: Nice. Okay, from me. Yesterday I started the SSO spike. Today I'm scoping audit logs for payments and bank details first, which is what Horizon needs. My blocker is that I don't have a test Microsoft tenant for SSO.
+sameer: I set one up last year for something else. I'll send you the credentials after this.
+arjun: Perfect, thank you.
+
+## Parking lot
+divya: One thing for the parking lot. The staging database is really slow this week. My tests take three times as long.
+sameer: It's the migration backfill. It should finish tonight.
+arjun: Let's check tomorrow. If it's still slow, I'll raise it with infra.
+arjun: Okay, that's it. Thanks everyone.

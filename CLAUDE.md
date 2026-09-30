@@ -16,6 +16,7 @@ pnpm build          # production build (also runs the TypeScript check)
 pnpm lint           # eslint
 python3 scripts/make-smoke-audio.py   # regenerate placeholder audio for the seed meeting
 node --env-file=.env.local scripts/upload-media.mjs <file> <storage-path> <mime>   # upload to the `media` bucket
+node --env-file=.env.local scripts/seed-meeting.mjs <slug> [--no-load]            # voice + load a seeded meeting
 ```
 
 There is no test suite yet. Verify with `pnpm lint && pnpm build`, then load the pages.
@@ -32,6 +33,7 @@ The schema and seed have no local Supabase. They were validated with a throwaway
   - `summaries` has one row per (meeting, template), generated on demand and cached. Bullets carry `source_ms` so they can link back to the moment.
   - `action_items` and `highlights` are separate rows, not text inside a summary.
   - `share_links` point to a meeting or a highlight through `target_type` and `target_id`.
+- **Fake capture layer:** `scripts/seed-meeting.mjs` reads `seed/meetings/<slug>.json` (metadata and cast, with a Sarvam `voice` per person) and `<slug>.script` (`## Chapter`, `key: line`, optional trailing `{action: text; due: …; owner: key}`). It voices each line separately with Sarvam `bulbul:v3` (`en-IN`), caching the clips by content hash in `media/tts-cache/`, and lays them end to end with deterministic pauses, so segment timings are exact. It encodes one MP3 with `ffmpeg-static` and replaces the meeting in Supabase wholesale (delete by fixed id, then insert; child rows cascade). Editing a line re-voices only that line. The pnpm build script for `ffmpeg-static` is allowed in `pnpm-workspace.yaml`.
 - **Media:** stored in the public Supabase Storage bucket `media`, at most 50 MB per file. `media_assets.storage_path` is the path inside the bucket, and `mediaUrl()` turns it into a public URL.
 - **Styling:** design tokens are CSS variables in `src/app/globals.css`, exposed as Tailwind colors (`bg-surface`, `text-muted`, `border-border`, `text-accent`, …), with dark-mode values. Speakers get a color key (`participants.color`) that maps to a `--spk-*` variable through `speakerColor()` in `src/lib/speakers.ts`. There are 10 colors so an 8-person call stays distinguishable.
 

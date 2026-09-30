@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-4000-8000-000000000011",
+  "title": "Horizon Retail — discovery call",
+  "platform": "zoom",
+  "started_at": "2026-09-24T09:00:00Z",
+  "participants": [
+    { "key": "rohan",  "name": "Rohan Kapoor",  "email": "rohan@ledgerline.in",       "voice": "rahul",  "color": "amber", "is_host": true },
+    { "key": "ananya", "name": "Ananya Rao",    "email": "ananya@ledgerline.in",      "voice": "pooja",  "color": "sky" },
+    { "key": "sunita", "name": "Sunita Verma",  "email": "sunita.verma@horizonretail.in", "voice": "shreya", "color": "fuchsia", "is_external": true },
+    { "key": "nikhil", "name": "Nikhil Joshi",  "email": "nikhil.joshi@horizonretail.in", "voice": "varun",  "color": "lime", "is_external": true }
+  ]
+}

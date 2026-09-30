@@ -66,13 +66,13 @@ You listed meetings, participants, summaries, transcripts and highlights. The **
 **Goal:** data that behaves like a real recording, so every later phase is tested against something real.
 
 **Seed script** (`scripts/seed`):
-1. **Write the scripts.** Claude writes meeting scripts with realistic content: interruptions, cross-talk, decisions, owners, tangents.
+1. **Write the scripts.** Hand-authored scripts in `seed/meetings/` (`<slug>.json` for metadata and cast, `<slug>.script` for chapters, lines and inline `{action: …}` tags). The content is realistic: interruptions, tangents, disagreements, decisions and owners.
    - **The hero meeting:** 8 people, about 60 minutes (for example a quarterly planning review), with known decisions and action items planted in it.
    - **3 or 4 supporting meetings:** a 1:1, a sales call, a stand-up and a 2-minute solo call, so cross-meeting search has something to find.
-2. **Voice them.** Text-to-speech with one distinct voice per speaker produces **real audio whose timestamps we know exactly**, so transcript sync is correct by construction. Segments are concatenated into one mono MP3 (a 60-minute file at 64 kbps is about 29 MB, under Supabase's 50 MB per-file limit).
+2. **Voice them.** **Sarvam AI** text-to-speech (`bulbul:v3`, `en-IN`), with one distinct voice per speaker, produces **real audio whose timestamps we know exactly**, so transcript sync is correct by construction. Segments are concatenated into one mono MP3 (a 60-minute file at 64 kbps is about 29 MB, under Supabase's 50 MB per-file limit).
 3. **Load everything.** Insert the participants, segments, media rows and derived `talk_time_ms`.
 
-**Upload path:** `/upload` takes a real recording (your 2-minute call). It goes through a transcription API with speaker diarization, lands in the same tables, and proves the pipeline isn't hard-wired to seeds.
+**Upload path:** `/upload` takes a real recording (your 2-minute call). It goes through Sarvam speech-to-text with speaker diarization, lands in the same tables, and proves the pipeline isn't hard-wired to seeds.
 
 **Status simulation:** a "Send notetaker" action advances a meeting through `joining → recording → processing → ready` with timers, so the in-progress states have a UI.
 
@@ -93,7 +93,7 @@ This is the core screen, built against the hero meeting from day one.
 - **In-meeting search:** matches are highlighted, with next/prev stepping and match markers on the timeline.
 
 ## Phase 4: AI summary, templates, action items
-- **Summaries:** Claude API, run server-side and cached in `summaries`. Every bullet carries `source_ms`, so clicking it seeks the player. That's how you trust a summary.
+- **Summaries:** **Groq** API, run server-side and cached in `summaries`. Every bullet carries `source_ms`, so clicking it seeks the player. That's how you trust a summary.
 - **Long meetings:** summarized per chapter first, then combined into the template (map-reduce). Pasting a whole 60-minute transcript into one prompt isn't the plan.
 - **Template switcher:** 4 or 5 templates. A template's first generation streams in; after that, switching is instant from the cache.
 - **Action items:**

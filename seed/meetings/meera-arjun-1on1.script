@@ -1,0 +1,39 @@
+// Weekly 1:1, the day after the Q4 roadmap review.
+
+## Check-in
+meera: Hey Arjun. How are you doing? Yesterday was a long one.
+arjun: It was, but honestly I left feeling good. It's the first planning meeting in a while where we actually picked one thing.
+meera: I felt the same. How's the team taking it?
+arjun: Mostly well. The engineers are relieved. They've been worried about being spread across three projects. Sameer is a bit disappointed about mobile, he was looking forward to it.
+meera: Can we give him something in the reconciliation work that's close to what he wanted?
+arjun: Maybe the review queue APIs. The mobile app will use them in Q1, so he'd be building the foundation for it.
+meera: That's a nice way to frame it. Tell him that.
+
+## Wins and blockers
+meera: What's going well this week?
+arjun: The Razorpay migration is ahead of schedule. We might finish it a week early, which gives us a week back for reconciliation.
+meera: That's great news. What's blocking you?
+arjun: Two things. The senior backend candidate. I sent Vikram the details, but I haven't heard back, and she has a deadline on her other offer on Friday.
+meera: I'll ping Vikram right after this. That's too important to lose to a slow reply. {action: Chase Vikram on the senior backend candidate's compensation before her Friday deadline; due: today}
+arjun: Thank you. The second is the SSO estimate. I promised Rohan a date by the end of next week, but the more I look at it, the more I think audit logs are the bigger piece of work, not SSO.
+meera: Why?
+arjun: SSO is mostly configuration with a library. Audit logs mean touching every place we change data. There are about a hundred and forty write paths in the codebase.
+meera: Can you do audit logs for the payments and bank details paths first? That's what Nikhil at Horizon cares about.
+arjun: Yes. That's maybe twenty write paths. That's much more realistic.
+meera: Then scope the estimate that way. Full coverage later.
+
+## Feedback and growth
+meera: I want to give you one piece of feedback from yesterday.
+arjun: Sure.
+meera: When Rohan pushed on SSO, you said, Rohan is right that it's the same team. That was really good. You named the trade-off without taking a side, and it made the decision easier for everyone.
+arjun: Thanks. I was worried I was being unhelpful.
+meera: The opposite. And one thing to work on. When you give estimates, you tend to give the optimistic one first and the realistic one second. Ten weeks, twelve if the bank formats are bad. People remember the first number.
+arjun: That's fair. I do that.
+meera: Try leading with the realistic number. It'll protect you and the team.
+arjun: Okay. I'll try that in the design doc.
+meera: And how are you doing, generally? You've been carrying a lot since the incident.
+arjun: I'm okay. Tired. The paternity leave on the team means I've been doing more hands-on work than I'd like.
+meera: Let's make sure you take a proper day off before the reconciliation work starts. I mean it.
+arjun: I'll take next Friday off. {action: Take a day off next Friday before the reconciliation work kicks off; due: next Friday}
+meera: Good. Put it in the calendar now, before you forget.
+arjun: Doing it now. Thanks Meera.

@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-4000-8000-000000000013",
+  "title": "Platform stand-up",
+  "platform": "teams",
+  "started_at": "2026-09-30T04:15:00Z",
+  "participants": [
+    { "key": "arjun",  "name": "Arjun Mehta",   "email": "arjun@ledgerline.in",  "voice": "aditya", "color": "teal", "is_host": true },
+    { "key": "sameer", "name": "Sameer Qureshi", "email": "sameer@ledgerline.in", "voice": "manan",  "color": "sky" },
+    { "key": "divya",  "name": "Divya Menon",   "email": "divya@ledgerline.in",  "voice": "ishita", "color": "rose" },
+    { "key": "fatima", "name": "Fatima Sheikh", "email": "fatima@ledgerline.in", "voice": "simran", "color": "emerald" }
+  ]
+}

@@ -1,0 +1,463 @@
+// Ledgerline Q4 roadmap review. 8 people, ~60 minutes.
+// Format: "## Chapter" starts a chapter; "key: line"; optional trailing
+// {action: text; due: when; owner: key} marks an action item (owner defaults to speaker).
+
+## Kickoff and agenda
+meera: Okay, I think that's most of us. Let's give it thirty seconds for Vikram, he said he was coming out of another call.
+rohan: He's in the finance review, it always runs over.
+meera: Fair. Kabir, can you hear us okay? You're the only one outside the company today, so shout if anything doesn't make sense.
+kabir: Yes, loud and clear. Thanks for having me. Happy to just listen for the first part.
+meera: Great. And Arjun, I think you're on mute.
+arjun: Sorry, sorry. Yes. I was saying good morning. The chai machine on our floor is broken again, so apologies if I'm slow today.
+kavya: That's the third time this month. At this point it's a reliability problem, Arjun, it should be on your roadmap.
+arjun: I'll add it right below the payments service.
+meera: Okay, Vikram's joining now. Hi Vikram.
+vikram: Hi everyone, sorry. Finance review ran long, as Rohan will have predicted.
+rohan: I did predict it.
+meera: So, here's the plan for the next hour. First, Fatima walks us through the Q3 numbers, because they change the conversation. Second, Ananya tells us what she's hearing from churned customers. Third, we look at the three big candidates for Q4 and actually pick one. Then capacity and hiring, pricing and the Horizon Retail deal, support, risks, and the board deck. We'll close with decisions and owners.
+meera: The one thing I want to leave with is a single clear priority for Q4. Not three priorities. One.
+ananya: One is going to be hard with this group.
+meera: That's why we have an hour. But before the numbers, I want to start with what went well, because the numbers are going to feel heavy and I don't want us to forget that Q3 had real wins.
+
+## Q3 wins
+meera: So, quickly, around the room. One thing from Q3 you're proud of. Arjun, you first.
+arjun: The payments add-on going to general availability. It was a year of work, three banks, two payment gateways, and it's been stable since launch apart from the incident I'll talk about later. And the mid-market attach rate is up, so people are actually using it.
+meera: Kavya.
+kavya: The invoice designer. We shipped custom invoice templates in July, and it's now the most used feature in the first week for new accounts. People really care about how their invoice looks to their own customers. I underestimated that.
+ananya: Customers love it. We get screenshots in support tickets from people showing off their invoices.
+meera: Rohan.
+rohan: Twelve new mid-market logos, which is our best quarter ever. And the average deal size went up by about thirty percent, mostly because of the payments add-on. It's much easier to sell a platform than a billing tool.
+meera: Ananya.
+ananya: Net promoter score for mid-market went up from thirty eight to forty seven. And our support team handled the August incident really well under a lot of pressure. I'm proud of them.
+meera: Fatima.
+fatima: Honestly, the thing I'm proudest of is that we now have one source of truth for revenue metrics. In Q2, finance and product had different ARR numbers. Now we don't.
+vikram: I'll second that one. That was a real problem at the last board meeting. It was embarrassing.
+meera: Vikram.
+vikram: We closed the quarter on budget, and we extended our runway by about four months through the vendor renegotiations. Not glamorous, but it gives us room to make the bets we're going to talk about.
+meera: Kabir, you're our guest, you're allowed to skip.
+kabir: I'll say one thing. Your team gave us the clearest product brief we've had from any client this year. It made the scoping much easier.
+meera: Thank you, that's kind. Okay. Fatima, over to you.
+
+## Q3 numbers
+fatima: Okay, I'll share my screen. Can everyone see the dashboard?
+arjun: Yes.
+fatima: So the headline first. Net revenue retention for Q3 came in at 104 percent. In Q2 it was 109. So we dropped five points in a quarter, which is the biggest drop we've had since we started tracking it.
+vikram: And to be clear, that's still above a hundred, so the existing base is growing, just much more slowly.
+fatima: Right. Expansion is actually fine. Mid-market expansion was strong, mostly seat growth and the payments add-on. The drop is almost entirely logo churn in SMB.
+meera: How bad is SMB churn?
+fatima: Monthly logo churn in SMB went from 2.1 percent in Q2 to 3.8 percent in Q3. That's the number that matters. In revenue terms it's small accounts, so it doesn't look dramatic in the ARR line, but it's a lot of customers.
+rohan: How many customers are we talking about?
+fatima: About 1,140 SMB accounts churned in the quarter. For comparison it was around 640 in Q2.
+kavya: Wow. That's almost double.
+fatima: Yes. And the second thing, which I think is related, is activation. Activation is our definition of a new account sending its first five invoices within fourteen days. That was 61 percent in Q2. In Q3 it's 48 percent.
+meera: That lines up with the new onboarding going live, doesn't it?
+fatima: It does. The new onboarding shipped on the eleventh of July. I don't want to claim causation yet, but the drop starts the week it shipped.
+kavya: I want to push back a little on that. The new onboarding also changed what counts as the start of the fourteen days. Before, the clock started when they verified their GST number. Now it starts at signup. So some of that drop is just the measurement moving.
+fatima: That's a fair point. I adjusted for it. If I use the old definition, activation is 53 percent. So the measurement explains about five points, and the other eight points are real.
+kavya: Okay. That's still bad, but it's a different conversation.
+meera: Eight real points is still a lot. Where are people dropping off?
+fatima: Step three. The bank connection step. In the old flow it was optional and at the end. In the new flow we moved it to step three and made it look required, even though you can skip it. Forty one percent of new accounts leave at that step.
+kavya: That was a deliberate choice. Accounts that connect a bank are much more likely to stick around.
+fatima: They are. The ones who get through step three retain really well. The problem is the ones who never get through at all.
+arjun: So we optimised for the good accounts and lost the median account.
+kavya: I'd put it more kindly than that, but yes.
+vikram: What's the revenue impact of the churn? Roughly.
+fatima: Roughly one point two crore of ARR lost to SMB churn in Q3. Against about seventy eight crore total ARR.
+vikram: So about one and a half percent. Not a crisis for the P and L, but it is a crisis for the story we tell the board about SMB.
+meera: And it compounds. Those are also the accounts that would have grown into mid-market.
+fatima: One more cut that I think is interesting. Churned accounts in Q3 were much less likely to have used reconciliation at all. Only nine percent of churned accounts had ever run a bank reconciliation. For retained accounts it's thirty eight percent.
+rohan: But isn't that just because the churned ones never connected a bank? You can't reconcile without a bank connection.
+fatima: Partly, yes. It's correlated with step three. I can't separate those two yet.
+meera: Can you separate them? I think that's going to matter for the roadmap decision.
+fatima: I can do a cohort analysis by onboarding version, and look at accounts that connected a bank but still didn't reconcile. Give me until next Wednesday. {action: Cohort analysis of churned SMB accounts by onboarding version, separating bank connection from reconciliation usage; due: next Wednesday}
+meera: Perfect. Anything else on numbers before we go to Ananya?
+fatima: Just one positive. Payments add-on attach rate in mid-market is up to 27 percent. That's the best it's ever been.
+rohan: That's the one I've been telling everyone about.
+vikram: It's a good number. I'd like to see it hold for a second quarter before we build a plan around it.
+
+## The August payments incident
+meera: Before Ananya, Arjun, I want five minutes on the August incident. Not to relitigate it, but because it's in the churn window and I want to know if it contributed.
+arjun: Sure. So on the nineteenth of August, from about eleven in the morning to a quarter past three, payment status webhooks from Razorpay were being received but not processed. The queue consumer had crashed after a deploy, and our alerting only watched the API, not the queue.
+arjun: So from the customer's point of view, payments were coming in, but invoices stayed marked as unpaid for about four hours. Some customers sent reminders to people who had already paid them.
+rohan: I remember. I had two customers call me directly that afternoon. One of them had sent a reminder to his biggest client.
+arjun: Yes. That's the worst version of it. Nobody lost money, but people were embarrassed in front of their own customers. That's arguably worse for trust.
+ananya: We got about three hundred and forty tickets that day. It was our worst support day of the year.
+meera: Did it show up in churn?
+fatima: I checked this last week. Accounts that sent a reminder during the incident window churned at about the same rate as everyone else in September. So I don't see a measurable effect. But the sample is small, around four hundred accounts.
+vikram: So it hurt, but it's not what's driving the SMB number.
+fatima: That's what the data says so far.
+meera: What did we change afterwards?
+arjun: Three things. The consumer now restarts automatically and we alert on queue depth, not just API errors. We added a reconciliation job that re-checks payment status every thirty minutes, so even if webhooks fail, invoices catch up. And we paused automatic reminders when payment data is stale.
+kavya: The last one is really good. I didn't know we'd done that.
+arjun: It shipped two weeks ago. There's one follow-up still open, which is alerting on the delay between a payment arriving and the invoice being updated. That's the metric that actually matters to customers. I'll have it done within two weeks. {action: Add alerting on payment-to-invoice update delay (incident follow-up); due: two weeks}
+meera: Please do. And can we write the incident up for customers? A short, honest note. I don't think we ever did.
+ananya: We sent an email the same day, but not a proper write-up. I'd be happy to do it with Arjun.
+arjun: Sure, I'll send you the internal postmortem.
+meera: Thanks. Okay, Ananya, over to you properly now.
+
+## Why SMB accounts churned
+meera: Ananya, what are customers telling you?
+ananya: So, my team called sixty two churned accounts in August and September. We reached forty of them, which is a good hit rate for churned customers, honestly.
+ananya: I'll give you the pattern first and then a couple of quotes. The pattern is: they didn't leave because of price, and they didn't leave for a competitor, mostly. They left because the month-end close was still painful.
+meera: Painful how?
+ananya: Reconciliation. Over and over. Their accountant is matching bank lines to invoices by hand in a spreadsheet, because our matching either wasn't set up, or it didn't match partial payments, or it didn't understand UPI references.
+arjun: The UPI reference problem is real. The narration field from most banks is a mess. We only handle the three biggest formats.
+ananya: One customer, a distributor in Pune, said something I wrote down word for word. She said, we didn't leave because Ledgerline was bad. We left because reconciliation took our accountant two full days every month, and the new tool does it in twenty minutes.
+kavya: Oof.
+rohan: Which tool?
+ananya: A couple mentioned Zoho. A few mentioned smaller players. But honestly more than half just went back to Tally and their accountant.
+vikram: Going back to Tally is the one that worries me most. That means we didn't give them enough value to justify the switch at all.
+ananya: Exactly. And the second theme, smaller but real, is that the owner signs up, but the accountant is the one who actually uses it, and we never onboard the accountant. The accountant sees it for the first time at month end, gets stuck, and says let's just go back.
+kavya: That's really useful. We've been designing onboarding for the owner.
+ananya: The owner decides, the accountant uses it. We have to win both.
+meera: How many of the forty mentioned reconciliation?
+ananya: Twenty three brought it up without us asking. When we asked directly, thirty one said it was one of their top two reasons.
+meera: Thirty one out of forty.
+ananya: Thirty one out of forty.
+rohan: Can I ask something? Were any of these on the annual plan, or all monthly?
+ananya: Almost all monthly. Four annual. Which also means they could leave with very little friction.
+fatima: That matches the data. Monthly SMB plans are about eighty percent of the churn.
+kabir: Can I ask a naive question as the outsider? Did any of them ask for a mobile app? Because that's a lot of what we hear from small business owners in our other projects.
+ananya: Some did. Seven, I think. But it was never the reason they left. It came up more as, it would be nice if I could approve payments on my phone.
+kabir: That's helpful, thank you. I'll be honest, I expected that number to be higher.
+ananya: So did I, to be fair.
+meera: Ananya, can you go deeper on this? Forty calls is a good start, but I want to hear from people who churned in the last month specifically, after the onboarding change had fully rolled out.
+ananya: Yes. I'll call ten of the September churns personally and write up what they say about reconciliation and onboarding. By the end of the month. {action: Personally call ten September churned accounts and write up reconciliation and onboarding feedback; due: end of the month}
+meera: Thank you. And please record them, with permission, so the rest of us can actually listen.
+ananya: Will do.
+
+## Onboarding step three: design review
+meera: Kavya, I know you wanted to respond on onboarding, since it came up twice now. Take a few minutes.
+kavya: Thanks. I want to explain why we made the choices we made, because I don't want the takeaway to be that the new onboarding was a mistake.
+kavya: The old flow had seven steps, and the bank connection was the last one, and optional. Only eighteen percent of new accounts connected a bank in their first week. And those who didn't connect a bank basically never got value from reconciliation or payments. So we moved it earlier.
+fatima: And bank connections in the first week went up a lot. It's thirty four percent now.
+kavya: Right. So for the accounts that get through, the new flow is much better. The issue, which the data is now showing us, is that the step feels mandatory, and for a lot of small businesses it's scary. You're asking them to give a new tool access to their bank account in the first five minutes.
+ananya: That's exactly what customers said. One of them told us, I didn't even know what your product did yet, and you wanted my bank login.
+kavya: And to be fair, it's not a bank login, it's through the account aggregator framework, which is consent-based and read-only. But the screen doesn't explain that at all. It just says, connect your bank.
+arjun: We could show the consent scope right on that screen. Read-only, no payments, revoke any time. The account aggregator gives us all of that.
+kavya: Yes. So my proposal has two parts. One, make the skip option obvious. A real button, not a small text link. Two, explain what connecting does, with the trust details Arjun just mentioned.
+kavya: And three, actually, I'd add a third. Let the owner invite their accountant during onboarding. Ananya's point about the accountant never being onboarded really landed with me.
+ananya: If you build the invite, I'll write the email the accountant receives. It needs to sound like it's for accountants, not for business owners.
+fatima: If we do the invite, I want to track it as its own funnel. Invited, accepted, first login, first reconciliation.
+kavya: Totally. I'll write up the funnel events with you.
+meera: How big is this work?
+kavya: The first two parts are small. A few days of design and a few days of front end. The accountant invite is bigger, maybe three weeks, because it touches roles and permissions.
+arjun: The permissions part is where it gets tricky. We'd need the accountant role to exist before the business is fully set up. Today we assume the owner finishes onboarding first.
+meera: Okay. Let's not design it in this meeting. But I like the direction. Kavya, can you bring a proper proposal for the accountant invite to design review next week?
+kavya: Yes. I'll have it for Tuesday's design review. {action: Proposal for inviting the accountant during onboarding, for Tuesday's design review; due: Tuesday}
+rohan: Can I just say, from sales, the accountant angle is something we under-sell too. When the accountant is on the demo call, we win much more often.
+ananya: Do you know how much more often?
+rohan: Not exactly. Anecdotally, a lot. Fatima, is that something we track?
+fatima: We don't track who attends demos, no. We'd have to add it to the CRM.
+rohan: I'll add a field. It takes me five minutes and it'll settle the argument in a quarter.
+
+## Q4 roadmap options
+meera: Okay. This is the main event. We have three serious candidates for Q4, and we can realistically do one of them well. Let me lay them out, and then I want each owner to make the case in two minutes. No slides.
+meera: Option one: bank reconciliation, done properly. Automatic matching, partial payments, UPI references, and an accountant-friendly review screen. Option two: the mobile app, which Kabir's team at Kite Studio has scoped with us. Option three: AI invoice capture, where you forward a PDF or a photo and it becomes a bill in Ledgerline.
+meera: Arjun, reconciliation first.
+arjun: Okay. So the case is basically everything Fatima and Ananya just said. It's the number one reason SMB accounts leave, and it's the thing that makes accountants trust us. Today our matching is rule-based and it handles exact amounts with clean references. That's maybe forty percent of real transactions.
+arjun: What we'd build is a matching engine that handles partial payments, one payment against several invoices, and fuzzy references. Plus a review queue so the accountant can approve suggestions in bulk. Plus parsers for the next eight bank formats, which gets us to about ninety percent of our customers' banks.
+meera: How long?
+arjun: With the full platform team, about ten weeks for a solid first version. Twelve if the bank formats are as bad as I think they are.
+vikram: Ten to twelve weeks is the whole quarter.
+arjun: It is the whole quarter. That's the honest answer.
+meera: Kabir, mobile.
+kabir: Sure. So, we scoped a mobile app for owners. The core use cases are: see who owes you money, send payment reminders, approve bills, and snap a photo of a receipt. We'd build it in React Native, sharing the API with the web app.
+kabir: The case for it is that your competitors all have one, and owners live on their phones. From our experience with similar products, a good mobile app increases weekly active usage from owners quite a lot.
+rohan: It also comes up in almost every sales demo. People ask, is there an app? And I have to say, not yet.
+kabir: Timeline, with two of our engineers and one of yours for the API work, is about fourteen weeks for both platforms. Ten if we do Android first, which honestly I'd recommend for your market anyway.
+fatima: Can I just note, the data says owners aren't the ones who churn us. The accountant is.
+kabir: That's fair. I'd argue owners are the ones who decide to renew, though.
+ananya: The owners who churned told us they left because their accountant was unhappy. So I think it's both, but the accountant problem comes first.
+kabir: Understood. I'm not going to fight the data.
+meera: Kavya, AI invoice capture. You've been prototyping that.
+kavya: Yes. So the idea is that you forward an invoice PDF, or take a photo, and we extract the vendor, amounts, GST breakdown and due date, and create the bill. We tested an off-the-shelf extraction model on two hundred real invoices from our own customers, with permission.
+kavya: It got the totals right about ninety two percent of the time. GST breakdown was worse, around seventy eight percent. Handwritten invoices were bad, as you'd expect.
+arjun: Seventy eight percent on tax fields is not something I'd put in front of an accountant.
+kavya: Agreed, not without a review step. But the demo is incredible. It's the kind of thing that sells.
+rohan: It really is. I showed the prototype video to two prospects and they both asked when they could have it.
+vikram: What does it cost to run? These models aren't free.
+kavya: At our volume, roughly two to three rupees per invoice. We'd have to put it in a paid tier.
+vikram: That's fine if it's priced properly.
+meera: Timeline?
+kavya: A usable beta in about six weeks, with one engineer and me. But it's a beta. The accuracy on tax fields is the open question.
+meera: Okay. So, let me reflect back what I'm hearing. Reconciliation fixes the reason we're losing customers, and takes the whole quarter. Mobile is what sales hears about in demos, but the churn data doesn't support it right now. AI capture is exciting and smaller, but the accuracy isn't there for tax fields yet.
+rohan: Can I make a slightly different argument? I don't disagree with any of the data. But I have a deal in the pipeline, Horizon Retail, that's worth eighteen lakh a year, and what's blocking it isn't any of these three. It's SSO and audit logs.
+meera: We're going to get to Horizon in the pricing section. I don't want to lose it.
+rohan: I know, but it affects capacity. If Arjun's whole team is on reconciliation, nobody's doing SSO.
+arjun: Rohan is right that it's the same team.
+meera: Okay, noted. Let's hold that thought for exactly ten minutes.
+kavya: One thought on reconciliation. A lot of the win isn't the matching engine, it's the review screen. Accountants will forgive a matching engine that's eighty percent right, if confirming the other twenty percent takes thirty seconds instead of two days.
+arjun: That's a really good point. The screen could ship before the engine is perfect.
+kavya: I'd like to prototype the review screen now and put it in front of five accountants. I can have something clickable in two weeks. {action: Prototype the reconciliation review screen and test it with five accountants; due: two weeks}
+meera: Please do.
+fatima: I can pull a list of accountants who log in to customer accounts regularly. We have an accountant role in the permissions, so that's easy.
+kavya: That would be amazing, thank you.
+
+## Competitive landscape
+meera: Before we decide, Rohan, give us the two-minute competitor picture. I want to make sure we're not deciding in a vacuum.
+rohan: Sure. Three things worth knowing. First, Zoho shipped a new reconciliation feature in August. It's genuinely good. It handles UPI references and partial payments. That's what our churned customers are comparing us to.
+arjun: Do we know how they handle the narration parsing?
+rohan: Not in detail. From the demo, it looks like they learn from corrections. If you fix a match, it remembers the pattern for that customer.
+arjun: That's what I'd want to do too. It's not hard to build if the review queue captures the corrections properly.
+rohan: Second, there's a new startup, Tallyfy, no relation to Tally, that's going after SMBs with a free tier. They're burning money, but they're getting attention. I've lost two small deals to them on price alone.
+vikram: I'm not worried about competing with free. That's not a game we can win and not one we should play.
+rohan: Agreed. I'm just flagging it. Third, and this is the one I think matters most, the big accounting firms are starting to recommend tools to their SMB clients. If an accountant recommends a product, the owner just buys it.
+ananya: Which is the accountant thing again.
+rohan: Everything today comes back to the accountant.
+kabir: For what it's worth, we see exactly this pattern with another client in the healthcare space. The person who recommends is not the person who pays, and the product has to win the recommender.
+meera: Is there a partner program opportunity here? Accounting firms?
+rohan: There could be. We've never done one. It'd need someone to own it.
+vikram: That's a 2027 conversation. Let's not start a new motion this quarter.
+meera: Fair. Rohan, can you write up what you're seeing from the lost deals, with the competitor named on each? Just a page. I want it for the board deck context.
+rohan: Yes, I'll share it by the end of next week. {action: One-page write-up of Q3 lost deals with the competitor named on each; due: end of next week}
+
+## Capacity and the call on mobile
+meera: Okay, capacity. Arjun, what do we actually have?
+arjun: Platform team is seven engineers. One is on paternity leave until mid-November. The payments service still needs about two weeks of work to finish the Razorpay migration, and that has a hard deadline. So realistically, six engineers from the second week of October.
+vikram: And hiring?
+arjun: We have two open roles. I'm not counting either of them for Q4. Even if we hired someone tomorrow, they wouldn't be productive before December.
+vikram: Good. I'd rather you didn't count them.
+meera: So six engineers, ten to twelve weeks for reconciliation. That's basically everything.
+arjun: It's everything, if I put all six on it. My honest suggestion is four on reconciliation, which gets us a first version in about eleven weeks, and two on the payments migration, then SSO.
+rohan: SSO in Q4? Really?
+arjun: A basic version. Google and Microsoft SSO, SAML later. Plus audit logs for the admin actions Horizon asked about. I'd want to do a proper spike before I promise a date.
+rohan: Can you do the spike this month? I need to tell Horizon something concrete.
+arjun: I can have an estimate by the end of next week. {action: SSO and audit log spike with a delivery estimate for Horizon Retail; due: end of next week}
+meera: Okay. Now the hard part. Kabir, I think the honest answer is that mobile doesn't make Q4.
+kabir: I suspected you'd say that.
+meera: I don't want to lose the work you've done. The scoping is really good. But I can't justify it against thirty one out of forty churned customers telling us reconciliation is the problem.
+kabir: I understand. Can I make a suggestion, then? Instead of a full app in Q1, what if we start with a much smaller scope? Just the accountant-facing approval flow and payment reminders, on Android only. That's the part that ties into reconciliation anyway.
+ananya: That's actually interesting. Accountants approve matches on the go more than you'd think.
+arjun: If it's using the same review APIs, it's less work for us too.
+kabir: We could come back with a revised plan for Q1. Smaller scope, Android first, built on top of the reconciliation work.
+meera: I'd like that. Can you get it to us by next Monday?
+kabir: Yes, next Monday works. {action: Revised Q1 mobile plan: Android first, accountant approvals and payment reminders, built on the reconciliation APIs; due: next Monday}
+vikram: Kabir, can you include a cost estimate in that, split by phase? It'll go into the budget conversation.
+kabir: Of course.
+meera: And AI capture. Kavya, my suggestion is that it doesn't get a team in Q4, but it gets a small spike. One engineer for three weeks, to see if we can get the tax field accuracy up with a review step. Would you support that?
+kavya: Honestly, yes. I'd rather do it properly than rush it. But I'd like the spike to happen in November, not be pushed forever.
+arjun: I can give you one engineer for three weeks starting the first week of November. I'll write that down so I don't forget.
+meera: So let me say the decision out loud, so it's clear on the recording. Reconciliation is the Q4 priority. Four engineers from the platform team. Mobile moves to Q1, with a reduced scope that Kabir will propose. AI capture gets a three-week spike in November. And SSO gets estimated this month, with a view to a basic version in Q4.
+rohan: I can live with that, if SSO really happens.
+meera: If the estimate says it fits, it happens. Arjun, you'll write up the technical design for reconciliation?
+arjun: Yes. Design doc by Friday the tenth. {action: Technical design doc for the reconciliation matching engine and review queue; due: Friday the 10th}
+meera: Good.
+
+## Reconciliation v1: what's in and what's out
+meera: Since reconciliation is now the whole quarter, I want ten minutes on scope. What's in the first version, and what's explicitly not. Arjun, start us off.
+arjun: Okay. In version one, I'd put four things. Automatic matching for exact amounts, which we already have but will make faster. Partial payments, so one payment can close part of an invoice. One payment against several invoices. And parsing for the next eight bank formats, so UPI references come through cleanly.
+kavya: And the review queue.
+arjun: And the review queue, yes. Sorry. That's the fifth, and probably the most important one.
+meera: What's out?
+arjun: Learning from corrections, the thing Rohan said Zoho does. I want it, but I'd put it in version two. Multi-currency is out. And matching against bills, so outgoing payments, is out. Version one is receivables only.
+fatima: Can I ask about confidence? When the engine suggests a match, does the accountant see how sure it is?
+arjun: I'd like to show three levels. Exact matches, which we auto-confirm. Strong suggestions, which go in the review queue already ticked. And weak suggestions, which go in the queue unticked.
+kavya: I'd push back on auto-confirming anything in version one. Accountants are nervous. If we match something wrong without asking, we lose them for good.
+arjun: Even exact matches? Same amount, same reference number?
+kavya: Even those, at first. Let them tick a setting to auto-confirm once they trust it.
+ananya: I agree with Kavya. The customers I spoke to were burned by tools that were too clever. One of them said, I'd rather click approve a hundred times than find a mistake at audit time.
+arjun: Okay. That's easy to change. Auto-confirm becomes an opt-in setting, off by default.
+fatima: And I'd like us to log every suggestion and whether it was accepted or changed. That's how we'll know if the engine is actually good, and it's the training data for version two.
+arjun: Yes, that has to be there from day one. It's also what makes learning from corrections possible later.
+meera: What does success look like? How will we know version one worked?
+fatima: I'd propose two metrics. Percentage of bank lines matched without the accountant typing anything. Today that's roughly forty percent. And time from bank statement import to fully reconciled, per month, per account.
+ananya: And I'd add a third. Reconciliation tickets per hundred active accounts. If that doesn't go down, it didn't work, whatever the other numbers say.
+meera: Targets?
+fatima: I'd say seventy five percent matched without typing by the end of Q4. And halve the time to reconcile.
+arjun: Seventy five is ambitious with the bank formats we have. I'd say seventy.
+fatima: Okay, seventy as the target, seventy five as the stretch.
+meera: I like that. Fatima, can you set up the tracking before the first version ships, so we have a baseline?
+fatima: Yes. I'll have the baseline dashboard live by the end of October. {action: Reconciliation baseline dashboard: auto-match rate, time to reconcile, reconciliation tickets per hundred accounts; due: end of October}
+rohan: Question from sales. Can I start talking about this to prospects now? Or is that dangerous?
+meera: You can say we're investing heavily in reconciliation this quarter. Don't promise dates or features until the design doc is done.
+rohan: Fair. I'll keep it general.
+kabir: One thought from the mobile side. If the review queue API returns the suggestions with the confidence level, we can build the approval screen on the phone without any new backend work. It would be good to design that API with mobile in mind from the start.
+arjun: That's a good point. I'll include the mobile use case in the design doc. Can you send me the screens you have in mind, even rough ones?
+kabir: Sure, I'll send sketches with the revised plan on Monday.
+
+## Hiring plan
+meera: Since we're on capacity, let's do hiring quickly. Arjun, the two open roles.
+arjun: Yes. One senior backend engineer, ideally someone who has worked on payments or banking integrations. And one engineer for the data platform, which would sit between my team and Fatima's.
+fatima: The data platform role would really help. Right now I spend about a third of my time on pipeline issues, not analysis.
+vikram: Both roles are in the budget. What's the status?
+arjun: The backend role has had about sixty applications. We've done eight first rounds and two final rounds. One candidate is strong, but she has another offer and I think we're below it on compensation.
+vikram: How far below?
+arjun: About twelve percent on base.
+vikram: Send me the details after this call. If she's the right person, I'd rather stretch than restart the search. A senior engineer who knows banking integrations is worth a lot to us this quarter specifically.
+arjun: Thank you. I'll send it today. {action: Send the senior backend candidate's offer details to Vikram for a compensation review; due: today}
+meera: And the data role?
+arjun: That one is slower. We've had about forty applications, but most are analysts, not engineers. I think we need to change the job description.
+fatima: I'll rewrite it with you. I think it reads like an analyst role because I wrote the first draft.
+arjun: That would help, honestly.
+meera: What about design? Kavya, you're the only designer on the product side right now.
+kavya: I am. I'm okay for Q4 if the scope is reconciliation, because it's one focused area. If we also do the accountant invite and the mobile work in Q1, I'll need help.
+meera: Let's revisit in the Q1 planning then. But I hear you, and I'd rather plan for it now than burn you out.
+vikram: Put it in the Q1 budget ask. I'd rather see it in the plan than get a surprise request in February.
+kavya: Okay, I'll add it.
+
+## Pricing and the Horizon Retail deal
+meera: Okay, Rohan. Horizon Retail. Go.
+rohan: Right. So Horizon Retail is a chain of forty two stores across Maharashtra and Gujarat. They've been evaluating us for about two months. The deal is eighteen lakh a year, which would make them our largest customer by a decent margin.
+rohan: The finance team loves us. The blocker is their IT head, who has two hard requirements. SSO with their Microsoft accounts, and audit logs that show who changed what, and when. Without those, it doesn't get past security review.
+vikram: Is there a timeline on their side?
+rohan: They want to sign before their financial year planning in January. So if I can give them a credible date for SSO by the end of October, I think we can close in December, with SSO as a condition.
+meera: That's why the spike matters. Arjun's estimate by the end of next week gives you time.
+rohan: It does. I'll tell them this week that we're scoping it, and that they'll have a date by the end of the month. {action: Update Horizon Retail on SSO timing: scoping now, firm date by end of month; due: this week}
+vikram: Rohan, one concern. If we give them custom terms or promise features into the contract, we need to be careful. I don't want an eighteen lakh deal that costs us fifty lakh in engineering.
+rohan: Understood. SSO and audit logs aren't custom though. Every enterprise customer will ask for them.
+vikram: That's fair. As long as they're built as product features and not a one-off for Horizon.
+arjun: They will be. I don't have the capacity to build them twice.
+ananya: Can I add something about Horizon? I was on the discovery call with Rohan last week. Their finance controller, Sunita, has around twenty lakh sitting in a suspense account at any time, because they can't match partial payments. Four thousand B2B invoices a month, and about a third are paid partially or together.
+arjun: That's exactly the case the new matching engine is for.
+ananya: Right. So I suggested a pilot. We take one month of their real bank statements and invoices, run them through reconciliation, and show them the match rate. They loved the idea.
+vikram: With what, the current engine? It'll look bad.
+ananya: That's the risk. If we run it today, we'd match maybe forty percent. If we wait until the new engine has partial payments, we'd do much better.
+rohan: I don't want to wait until December to show them anything. They'll lose interest.
+arjun: What if we run the pilot manually with the new logic, before it's in the product? Divya is already prototyping the partial payment matching. We could run their August data through the prototype offline.
+vikram: Is that safe, data-wise?
+arjun: Only with an NDA and a data processing agreement in place. And we'd do it in an isolated environment, not production.
+rohan: They've already asked for an NDA and a DPA. I'm sending both this week.
+meera: Okay. I like that. It's also a real-world test of the engine on the hardest customer we have. If it works for Horizon, it'll work for almost anyone.
+ananya: I'll coordinate it with Divya once the paperwork is signed.
+meera: Okay, pricing. Vikram, you had a proposal.
+vikram: Yes. So the proposal is a new tier between Starter and Business. We're calling it Growth for now. 4,999 rupees a month, which includes the payments add-on, reconciliation, and, when it exists, AI invoice capture.
+vikram: The logic is that our Starter tier is too cheap to sustain the support load from SMB, and Business is too expensive for a small company to jump to. Growth gives them somewhere to go.
+ananya: Would existing Starter customers get moved?
+vikram: No. We'd grandfather them. Only new signups would see the new tier structure.
+ananya: Good. The worst thing we could do right now is surprise SMB customers with a price increase in the middle of a churn problem.
+vikram: Agreed. That's exactly why I'd grandfather them.
+rohan: I like it. It gives sales something to upsell into. Right now the jump from Starter to Business is almost three times the price, and people just don't make it.
+fatima: I can give you the price sensitivity data from the last pricing survey, if that helps. It's from March, so it's a bit old.
+vikram: Please. I need to model the impact before the board deck, which is next Thursday. I'll take the action to model Growth tier pricing, including the cannibalisation of Business. {action: Model Growth tier pricing impact, including cannibalisation of Business, for the board deck; due: next Thursday}
+meera: Should reconciliation be in Growth, or should it be in every tier? If it's the thing that stops churn, putting it behind a paywall seems backwards.
+vikram: That's a good challenge.
+ananya: I agree with Meera. Basic reconciliation should be in every tier. Maybe the bulk review queue and the advanced matching could be in Growth.
+vikram: Okay, I can model both versions. Basic reconciliation everywhere, advanced in Growth. I'll bring both to the board prep.
+meera: Great. I'm not going to decide pricing in this meeting. But I want both options on the table.
+
+## Mid-market and the payments add-on
+meera: Before support, Rohan, I want to go back to the good news for a minute. Mid-market. Because I don't want the SMB conversation to make us forget where the growth actually is.
+rohan: Yes, please. So mid-market is now about fifty five percent of new ARR, up from forty percent a year ago. Twelve new logos in Q3, and the pipeline for Q4 is the strongest it's ever been. About three point four crore in qualified pipeline.
+vikram: What's your expected close rate on that?
+rohan: Historically about twenty five percent in a quarter. So I'd forecast around eighty five lakh of new ARR from mid-market in Q4, not counting Horizon.
+vikram: I'll use seventy five in the plan. You always forecast a little high.
+rohan: That's fair, I do.
+meera: What's winning those deals?
+rohan: Honestly, the payments add-on. Mid-market finance teams want invoicing and collections in one place. When we show them a customer paying through a UPI link on the invoice and the invoice marking itself paid, that's the moment in the demo.
+arjun: Which only works if the webhooks work.
+rohan: Which is why I was so upset in August.
+ananya: Mid-market customers also churn much less. Under one percent monthly. And when they have problems, they tell us, instead of just leaving.
+fatima: Mid-market net revenue retention on its own is 118 percent. So if you split the business, mid-market is very healthy and SMB is the problem.
+vikram: That split should be on a slide. It changes how the board reads the headline number.
+fatima: I'll make that chart.
+meera: Is there a risk that reconciliation work doesn't help mid-market?
+arjun: It helps them too. Mid-market customers have the same UPI reference problem, they just have finance teams who absorb the pain. Several of them have asked for bulk matching.
+rohan: Two of my current deals have asked about reconciliation specifically. So it's not only a retention feature, it's a sales feature too.
+meera: Good. That makes the decision easier, not harder.
+
+## Support load and customer success
+meera: Ananya, you asked for a few minutes on support load.
+ananya: Yes, thank you. So, ticket volume in Q3 was up twenty two percent on Q2, while the number of customers grew about nine percent. So tickets per customer went up a lot.
+vikram: What's driving it?
+ananya: Three categories make up about sixty percent of the increase. Reconciliation questions, mostly UPI references not matching. Onboarding questions about the bank connection. And the August incident, which was a one-off.
+arjun: So two of the three are things we just decided to work on.
+ananya: Exactly. Which is good news. If reconciliation and the onboarding changes land, I'd expect ticket volume to come down in Q1.
+meera: What's your first response time now?
+ananya: Median first response is three hours and ten minutes. Our target is two hours. We're missing it mostly in the last week of each month, during month-end close.
+rohan: That's also when customers are most stressed.
+ananya: Right. So my ask is small. I'd like to bring in two temporary support people for the last ten days of each month, for October, November and December. It's much cheaper than a permanent hire, and it covers the peak.
+vikram: What does it cost?
+ananya: About one point eight lakh a month for both.
+vikram: That's reasonable. Send me a one-line proposal and I'll approve it.
+ananya: Thank you. I'll send it today.
+ananya: The other thing I want to do is write a set of reply templates for UPI reference mismatches. Right now every agent writes their own answer, and some of them are wrong. That's cheap and it'll help immediately.
+arjun: If you send me the ten most common cases, I can tell you which ones are real bugs and which ones are expected behaviour.
+ananya: Deal. I'll send them this week. {action: Send Arjun the ten most common UPI reference mismatch cases and write support reply templates; due: this week}
+
+## Risks: e-invoicing and SOC 2
+meera: Okay, risks. We have about ten minutes. Arjun, the e-invoicing change first.
+arjun: Yes. So the GST e-invoicing threshold is changing. From the first of December, businesses above a lower turnover threshold have to generate e-invoices through the invoice registration portal. A lot of our SMB customers who were exempt will suddenly need it.
+arjun: We already support e-invoicing for mid-market customers, so the integration exists. The risk is load, and the onboarding. Thousands of SMB accounts turning it on in the same week.
+fatima: How many accounts does it affect?
+arjun: I estimated around six thousand, but I'd love you to check that number against turnover data.
+fatima: I can. It's a simple query.
+meera: This is also an opportunity, isn't it? If we make the switch painless, that's a reason to stay.
+ananya: It's a huge opportunity. Customers are already asking us about it. If we send a clear guide and make it one click to turn on, that's goodwill.
+arjun: I'd like a small amount of capacity reserved for this in November. Maybe one engineer for two weeks.
+meera: That comes out of the same six people.
+arjun: I know. I'm flagging it now so it isn't a surprise. It's a compliance deadline. It's not optional.
+vikram: I'd rather lose a week of reconciliation than have customers unable to invoice legally. That's an easy call.
+meera: Agreed. Reserve it. Ananya, can your team prepare the customer comms for e-invoicing? Guide, email, in-app banner.
+ananya: Yes, we'll have drafts by mid-November. {action: Customer comms for the December e-invoicing change: guide, email and in-app banner; due: mid-November}
+meera: And SOC 2.
+vikram: SOC 2 Type 2. Our observation window has to start by January if we want the report before the Horizon renewal next year. And honestly, every enterprise deal after Horizon will ask for it.
+arjun: Most of the controls are already in place from Type 1. The gap is mostly access reviews and change management evidence. Audit logs will actually help with that.
+meera: Who owns getting the auditor booked?
+vikram: Technically it sits between me and Arjun, which means historically nobody does it.
+meera: Then I'll own it. I'll book the auditor kickoff by the twentieth of October. {action: Book the SOC 2 Type 2 auditor kickoff; due: October 20}
+vikram: Thank you. That's a relief.
+meera: What about the Razorpay migration? You said it has a hard deadline.
+arjun: Yes. Razorpay is retiring the old version of their payments API on the thirtieth of November. After that, anything still on the old API stops working. We're about seventy percent done. Two engineers, two more weeks, and then a week of monitoring.
+vikram: What happens if we miss it?
+arjun: Payment links on invoices stop working for everyone. It would be much worse than the August incident. So it's the one thing I'd never trade off against reconciliation.
+meera: Is there a fallback?
+arjun: We could route payments through our second gateway for a while, but only about half our customers have it configured. So it's a partial fallback at best.
+meera: Okay. Then I want a weekly update on the migration until it's done. Just one line in the product channel every Monday.
+arjun: Sure, I'll post it every Monday until it's finished. {action: Weekly one-line Razorpay migration status in the product channel until done; due: every Monday}
+rohan: Can we tell customers anything? Some of the bigger ones will get emails from Razorpay and ask us about it.
+ananya: I'll prepare a short answer for the support team, so we're consistent. Basically, we're on it, and nothing changes for you.
+arjun: Say it like that, exactly. The less customers have to think about it, the better.
+fatima: One more small risk from my side. The data warehouse migration. If it slips, the cohort analysis I promised takes longer. I don't think it will slip, but I wanted to say it.
+meera: Noted. Tell me early if it does.
+
+## Board deck prep
+meera: Very quickly, the board deck. Vikram, what do you need from each of us, and by when?
+vikram: The board meeting is on the fifteenth of October. I need everything by next Thursday so I have the weekend to put it together.
+vikram: From Fatima, the Q3 numbers we saw today, with the adjusted activation number, and a clear chart of SMB churn by month. From Meera, the Q4 priority and the reasoning, basically what we decided today. From Rohan, pipeline and the Horizon deal. From Ananya, the customer quotes, especially the one about two days of reconciliation. That quote is going to do more work than any chart.
+ananya: I'll send the quotes with the customers anonymised.
+vikram: Please. And from Arjun, one slide on the August incident and what we changed. The board will ask. It's better that we bring it up ourselves.
+arjun: Okay. I'll keep it to one slide.
+meera: Fatima, is next Thursday realistic for the charts, given the cohort work?
+fatima: Yes. The board charts are the standard ones. The cohort analysis is separate, and if it's ready by Wednesday I'll include a summary.
+meera: How do you think the board will react to the SMB number?
+vikram: They'll be concerned, but not alarmed, as long as we show that we understand the cause and have a specific plan. What they don't like is a bad number with a vague explanation.
+meera: Then today's meeting is exactly the story. Here's the number, here's why, here's the one thing we're doing about it.
+vikram: That's the deck in one sentence. I might steal it.
+meera: Okay. Everyone, please send your parts to Vikram by next Thursday.
+
+## Any other business
+meera: Anything else before I recap? We have a couple of minutes.
+kavya: One quick thing. The team offsite. Are we still doing it in November?
+meera: We are. Probably the third week of November, in Lonavala again, unless someone has a better idea.
+arjun: Not Lonavala in November, it'll be packed. What about Alibaug?
+rohan: Alibaug means a ferry. Half the team will be late.
+ananya: Half the team is late anyway.
+meera: Okay, I'm not deciding the offsite location on a recorded call. I'll send a poll.
+fatima: One more from me. I'd love to do a short data walkthrough for the whole company, maybe thirty minutes, on how to read the new dashboards. A lot of people are asking me the same questions one by one.
+meera: Great idea. Put it in the all-hands slot next Friday.
+fatima: Will do.
+vikram: And a reminder that expense reports for September are due on Friday. Please. I'm asking nicely this month.
+rohan: That one's for me, isn't it.
+vikram: It's for everyone, Rohan. But yes, mostly for you. {action: Collect everyone's board deck inputs and get them to Vikram; due: next Thursday}
+
+## Wrap-up: decisions and owners
+meera: Okay, we're at time. Let me recap, and please correct me if I get anything wrong.
+meera: Decision one. Bank reconciliation is the single Q4 priority. Four platform engineers, first version in about eleven weeks. Arjun owns the design doc, due Friday the tenth.
+meera: Decision two. The mobile app moves to Q1, with a reduced scope. Kabir sends a revised plan by next Monday, with a cost estimate per phase.
+meera: Decision three. AI invoice capture gets a three-week spike with one engineer, starting the first week of November.
+meera: Decision four. SSO and audit logs get estimated by the end of next week, and Rohan updates Horizon Retail this week.
+meera: Decision five. One engineer reserved for two weeks in November for the e-invoicing change.
+meera: And on pricing, no decision today. Vikram models two versions of the Growth tier for the board deck.
+meera: Smaller items. Arjun adds the payment delay alert from the incident. Ananya gets temporary support cover for month-end, and sends the UPI cases. Rohan writes up the lost deals. Kavya brings the accountant invite proposal to design review on Tuesday. And board inputs go to Vikram by next Thursday.
+rohan: That all sounds right to me.
+kavya: One small addition. We should test reverting step three of onboarding. Make the bank connection optional again, as an A/B test. It's cheap and we'd learn a lot.
+fatima: I'd support that. It would also make my cohort analysis much cleaner going forward.
+meera: Agreed. Kavya, can you set that up?
+kavya: Yes, it can go in the next sprint. {action: A/B test making the bank connection step optional again in onboarding; due: next sprint}
+meera: Great. I'll send a written recap of all of this to the wider team today. {action: Send the written recap of decisions and owners to the wider team; due: today}
+ananya: Thanks Meera. This was a good one.
+kabir: Thanks everyone. I'll have the revised plan to you on Monday.
+vikram: Thanks all. Arjun, please fix the chai machine.
+arjun: It's on the roadmap now. Right after reconciliation.
+meera: Thank you everyone. See you next week.

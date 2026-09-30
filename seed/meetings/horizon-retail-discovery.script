@@ -1,0 +1,46 @@
+// Sales discovery call with Horizon Retail (the enterprise deal discussed in the Q4 review).
+
+## Introductions
+rohan: Good afternoon, Sunita, Nikhil. Thanks for making time. I've got Ananya with me, she leads customer success, so she'll be the person looking after you if we work together.
+sunita: Good afternoon. Thanks for setting this up. Nikhil is our head of IT, I asked him to join because he'll have questions I can't answer.
+nikhil: Hello everyone.
+ananya: Hi both, nice to meet you.
+rohan: So, I'd love to start by understanding how invoicing and collections work at Horizon today, and then we can talk about what would need to be true for Ledgerline to work for you.
+
+## How Horizon invoices today
+sunita: Sure. So we have forty two stores across Maharashtra and Gujarat. Retail sales go through our point of sale system, that's not the problem. The problem is our B2B side. We supply to about three hundred institutional customers, hotels, offices, a few hospitals. That's where the invoicing is painful.
+rohan: How many invoices a month on the B2B side?
+sunita: Around four thousand. And about a third of them are paid partially, or in instalments, or paid together with other invoices in a single transfer.
+ananya: That's the hardest kind of reconciliation there is.
+sunita: It is. My team is six people, and honestly, two of them spend most of the month just matching payments to invoices in Excel.
+rohan: What happens when a payment can't be matched?
+sunita: It goes into a suspense account, and someone chases the customer to ask what it was for. At any time we have around twenty lakh sitting in suspense. It drives our auditors mad.
+rohan: That's a real cost. Not just the time, but the working capital visibility.
+sunita: Exactly. I don't know my real receivables position until about the tenth of the next month.
+
+## Requirements and security
+rohan: Nikhil, from the IT side, what does a new finance tool need to pass?
+nikhil: Three things, and they're not negotiable. First, single sign-on with our Microsoft accounts. We don't allow separate passwords for any business system any more. Second, audit logs. I need to be able to see who changed what, and when, especially on anything to do with payments or bank details.
+nikhil: Third, data residency. All financial data has to be stored in India.
+rohan: Data residency we already meet, everything is hosted in Mumbai. Audit logs and SSO, I'll be honest with you, they're on our roadmap but not live today.
+nikhil: Then I can't approve it today. I'm sorry, it's not my decision, it's our security policy.
+rohan: No, I completely understand, and I'd rather be straight with you now than have it come up in security review. Can I come back to you with a firm date for SSO and audit logs?
+nikhil: Yes. If there's a committed date before our financial year planning, which is in January, we can put it in the contract as a condition.
+rohan: That's really helpful. I'll get you a date by the end of October. {action: Get a firm SSO and audit log date for Horizon Retail; due: end of October}
+nikhil: And I'll need your security documentation. Any certifications, penetration test reports, that kind of thing.
+rohan: We have SOC 2 Type 1, and a pen test from April. I'll send both today. {action: Send SOC 2 Type 1 report and April pen test summary to Nikhil; due: today}
+
+## Commercials and next steps
+sunita: Can I ask about pricing? I know it depends, but roughly.
+rohan: For your volume, with the payments add-on and reconciliation, you'd be on our Business plan with enterprise terms. I'd estimate somewhere around eighteen lakh a year, but I'll send a proper proposal.
+sunita: That's within what we discussed internally. If it actually gets rid of the suspense account problem, it pays for itself.
+ananya: Can I suggest something? Before a proposal, let us run a reconciliation pilot on one month of your real data. We'd take your bank statements and invoice list for, say, August, and show you how much we match automatically.
+sunita: I love that idea. That's the thing I actually need to see.
+nikhil: If the data leaves our systems, I need an NDA and a data processing agreement first.
+rohan: Of course. I'll send both with the proposal.
+ananya: I'll own the pilot on our side. Once the paperwork is signed, we need about a week. {action: Run a one-month reconciliation pilot on Horizon's August data once the NDA and DPA are signed; due: one week after paperwork}
+sunita: Perfect. Let's do that.
+rohan: Great. So to summarise. I send the security documents today, the proposal, NDA and DPA this week, and a firm SSO date by the end of October. Ananya runs the pilot once the paperwork is done.
+sunita: And I'll get our August statements ready.
+rohan: Thank you both. This was really useful.
+nikhil: Thanks. Talk soon.
