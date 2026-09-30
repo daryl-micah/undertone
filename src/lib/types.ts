@@ -17,6 +17,8 @@ export interface Meeting {
   ended_at: string | null;
   duration_ms: number | null;
   language: string;
+  language_mix: "en" | "hi-en" | "hi";
+  hindi_ratio: number;
   created_at: string;
 }
 
@@ -50,6 +52,9 @@ export interface TranscriptSegment {
   start_ms: number;
   end_ms: number;
   text: string;
+  text_romanized?: string | null;
+  text_english?: string | null;
+  hindi_ratio?: number;
 }
 
 export interface Chapter {
@@ -104,6 +109,8 @@ export interface Highlight {
   title: string | null;
   note: string | null;
   excerpt: string | null;
+  excerpt_romanized: string | null;
+  excerpt_english: string | null;
   created_by_name: string;
   created_at: string;
 }
@@ -130,3 +137,6 @@ export interface CalendarEvent {
   attendees: { name: string; email?: string }[];
   auto_record: boolean;
 }
+
+/** How a Hinglish transcript is shown: as spoken, romanized, or in English. */
+export type ScriptMode = "mixed" | "romanized" | "english";

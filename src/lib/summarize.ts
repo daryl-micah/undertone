@@ -36,7 +36,7 @@ async function load(meetingId: string): Promise<Loaded> {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await client
       .from("transcript_segments")
-      .select("id, meeting_id, seq, participant_id, speaker_label, start_ms, end_ms, text")
+      .select("id, meeting_id, seq, participant_id, speaker_label, start_ms, end_ms, text, text_english")
       .eq("meeting_id", meetingId)
       .order("seq")
       .range(from, from + 999);
@@ -55,7 +55,8 @@ async function load(meetingId: string): Promise<Loaded> {
 function transcriptLines(m: Loaded, segs: TranscriptSegment[]) {
   const name = new Map(m.participants.map((p) => [p.id, p.name]));
   return segs
-    .map((s) => `L${s.seq} [${formatTimestamp(s.start_ms)}] ${name.get(s.participant_id ?? "") ?? s.speaker_label}: ${s.text}`)
+    // Hinglish lines are summarized from their English translation; line numbers stay the same.
+    .map((s) => `L${s.seq} [${formatTimestamp(s.start_ms)}] ${name.get(s.participant_id ?? "") ?? s.speaker_label}: ${s.text_english ?? s.text}`)
     .join("\n");
 }
 
@@ -123,7 +124,8 @@ async function condense(m: Loaded, progress: Progress) {
       system:
         "You take precise notes on sections of a meeting transcript so they can be summarized later without the transcript. " +
         "For each chapter, write 3 to 8 short factual notes: decisions, numbers, disagreements, commitments with owner and due date, risks, and notable quotes. " +
-        "Name the people involved. Keep exact figures. Each note cites the single most relevant transcript line number (the N in LN).",
+        "Name the people involved. Keep exact figures. Each note cites the single most relevant transcript line number (the N in LN). " +
+        "Always write in English.",
       user:
         `Meeting: ${m.meetingTitle}\nAttendees: ${attendees(m)}\n\n` +
         group.map(({ c, i, text }) => `### Chapter ${i}: ${c.title}\n${text}`).join("\n\n"),
@@ -214,6 +216,7 @@ export async function generateSummary(
       system:
         `${template.prompt} ` +
         "Write for someone who missed the meeting: specific, concise, no filler. Leave out jokes and small talk. " +
+        "Always write in English, even if the meeting was in Hindi or Hinglish. " +
         "Use people's names and keep exact numbers. Keep dates exactly as spoken (\"next Thursday\"); never convert them to calendar dates. " +
         "Each bullet is one short sentence and cites the transcript line number (N from LN) that best supports it. " +
         "Include every section, in order, following its instructions; use an empty list if the meeting didn't cover it. Sections:\n" +
