@@ -7,7 +7,7 @@ The capture layer (the bot that joins Zoom/Meet/Teams) is **faked on purpose**. 
 ## Stack
 - Next.js 16 (App Router), TypeScript, Tailwind v4, deployed on Vercel
 - Supabase: Postgres for data, Storage bucket `media` for recordings
-- Sarvam AI for text-to-speech (voicing the seeded meetings) and Groq for summaries
+- Sarvam AI for text-to-speech (voicing the seeded meetings) and speech-to-text (`saaras:v3`, code-mixed Hindi/English with diarization); Groq for summaries and for romanizing and translating Hinglish lines
 - No auth: a single shared demo workspace. All database access is server-side with the service role.
 
 ## Setup
@@ -21,7 +21,7 @@ The capture layer (the bot that joins Zoom/Meet/Teams) is **faked on purpose**. 
    ```
 4. **Seed the demo meetings** (voices each script with Sarvam TTS and caches the clips in `media/tts-cache/`, so re-runs are free):
    ```sh
-   for m in q4-roadmap-review horizon-retail-discovery meera-arjun-1on1 platform-standup; do
+   for m in mandi-sprint-planning q4-roadmap-review horizon-retail-discovery meera-arjun-1on1 platform-standup; do
      node --env-file=.env.local scripts/seed-meeting.mjs $m
    done
    ```

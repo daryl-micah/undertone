@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A rebuild of Fathom (meeting notetaker) for a timed assessment judged on speed, product judgement and UX. `Plan.md` is the source of truth for phase order, scope, and what is deliberately cut. Read it before starting a phase. The meeting-capture bot is faked on purpose: meetings are seeded or uploaded, never recorded live. Every screen should work well for the seeded 8-person, 60-minute meeting, not just short calls.
+A rebuild of Fathom (meeting notetaker) for a timed assessment judged on speed, product judgement and UX. **The pitch:** it's built for how Indian teams actually talk, Hindi and English mixed mid-sentence (see "The pitch" in `Plan.md`). `Plan.md` is the source of truth for phase order, scope, and what is deliberately cut. Read it before starting a phase. The meeting-capture bot is faked on purpose: meetings are seeded or uploaded, never recorded live. Every screen should work well for the seeded 8-person, 60-minute meeting, not just short calls.
 
 ## Commands
 
@@ -34,6 +34,15 @@ The schema and seed have no local Supabase. They were validated with a throwaway
   - `action_items` and `highlights` are separate rows, not text inside a summary.
   - `share_links` point to a meeting or a highlight through `target_type` and `target_id`.
 - **Fake capture layer:** `scripts/seed-meeting.mjs` reads `seed/meetings/<slug>.json` (metadata and cast, with a Sarvam `voice` per person) and `<slug>.script` (`## Chapter`, `key: line`, optional trailing `{action: text; due: …; owner: key}`). It voices each line separately with Sarvam `bulbul:v3` (`en-IN`), caching the clips by content hash in `media/tts-cache/`, and lays them end to end with deterministic pauses, so segment timings are exact. It encodes one MP3 with `ffmpeg-static` and replaces the meeting in Supabase wholesale (delete by fixed id, then insert; child rows cascade). Editing a line re-voices only that line. The pnpm build script for `ffmpeg-static` is allowed in `pnpm-workspace.yaml`.
+- **Hinglish:** `src/lib/hinglish.mjs`, `sarvam.mjs` and `groq-core.mjs` are plain `.mjs` so both Node scripts and the Next app import them (`groq.ts` wraps `groq-core.mjs`; `server-only` can't be imported from Node).
+  - `processLanguage(db, meetingId)` sets each segment's `hindi_ratio` (share of Devanagari words) and the meeting's `hindi_ratio` and `language_mix` (`en` / `hi-en` / `hi`). It then fills `text_romanized` and `text_english` for lines with Hindi via batched Groq calls, retrying or splitting a batch until every input id has exactly one output. It's safe to re-run.
+  - The seed script calls it for every meeting, and so does the upload processor.
+  - Transcribed meetings (`"transcribe": true` in the seed JSON, and every upload) use Sarvam batch STT, `saaras:v3` in `codemix` mode with diarization. The REST endpoint is limited to 30 s and has no diarization. The seed maps diarized speakers to the cast by overlap with the voicing timeline and prints the agreement percentage.
+  - The transcript toggle (`?script=mixed|romanized|english`) goes through `segmentText` / `excerptText` in `src/lib/script.ts`. Highlights store `excerpt_romanized` and `excerpt_english`, so pages without the transcript can follow it.
+  - `tsv` indexes English stems of `coalesce(text_english, text)` plus `simple` words of `text` and `text_romanized`. `prefix_tsquery` ORs both configs per word, so "कल", "kal" and "tomorrow" all find the same line.
+  - Summaries read `text_english ?? text` and are always in English.
+- **Uploads:** `/upload` → `POST /api/uploads` (creates a `processing` meeting and a signed Storage URL; the browser uploads directly, because Vercel caps request bodies at 4.5 MB) → `POST /api/uploads/[id]/process` (NDJSON progress; transcribe, store, `processLanguage`, mark `ready` or `failed`).
+- **PostgREST bulk inserts:** a key missing from some rows is sent as `null`, not the column default. Give every row the same keys.
 - **Media:** stored in the public Supabase Storage bucket `media`, at most 50 MB per file. `media_assets.storage_path` is the path inside the bucket, and `mediaUrl()` turns it into a public URL.
 - **Styling:** design tokens are CSS variables in `src/app/globals.css`, exposed as Tailwind colors (`bg-surface`, `text-muted`, `border-border`, `text-accent`, …), with dark-mode values. Speakers get a color key (`participants.color`) that maps to a `--spk-*` variable through `speakerColor()` in `src/lib/speakers.ts`. There are 10 colors so an 8-person call stays distinguishable.
 
