@@ -10,23 +10,6 @@ Under that sits the Fathom baseline: playback synced to the transcript, AI summa
 
 ---
 
-## Walkthrough (5 minutes)
-
-1. **Sprint 23 planning** (pinned first, "Hinglish · 79% Hindi"). A 5-person sprint planning at a Bengaluru startup.
-   - Switch the transcript between **Mixed / Romanized / English**. The choice is kept in the URL (`?script=`).
-   - Search for `कल`, `kal` or `tomorrow`: they find the same lines.
-   - Read the **Summary**. It's in English, and every bullet's timestamp plays that moment.
-2. **Q4 roadmap review**: the case that matters, **8 people, 56 minutes, 424 transcript lines**.
-   - The speaker lanes under the scrubber show who dominated, and **Chapters** gives you 18 places to jump to.
-   - Switch summary templates. **Decisions & risks** suits a planning call.
-   - Press **H** while it plays to highlight the last 15 seconds, or select lines in the transcript. Then **Share** the clip, and open the link in a private window: it plays only the clip.
-3. **Home → Upcoming** (calendar demo data).
-   - **Send notetaker now** on the live event: it joins, records with a timer, and you **Stop** it.
-   - Upload a recording, and it's transcribed into that same meeting. Hindi, English or mixed all work.
-4. **Search** (or press `/`), **Highlights** and **Action items** cover every meeting at once.
-
----
-
 ## What's real and what's faked
 
 | Real | Faked, on purpose |
@@ -35,7 +18,7 @@ Under that sits the Fathom baseline: playback synced to the transcript, AI summa
 | **Speech-to-text** with speaker detection: Sarvam `saaras:v3` in `codemix` mode, for the Hinglish meeting and every upload | **The calendar.** "Connect Google Calendar" loads sample events placed around now, with no OAuth. |
 | Summaries and templates (Groq `gpt-oss-120b`), with bullets citing transcript lines | **Seeded audio is text-to-speech.** The meetings were scripted, then voiced with Sarvam, one voice per person. |
 | Hinglish romanization and translation, per line (Groq) | **The English seeded meetings use their script as the transcript.** Only the Hinglish meeting was transcribed from its audio, which is the honest test of the pipeline. |
-| Full-text search across Devanagari, romanized and English text (Postgres) | **About 25% of the hour-long meeting's lines, and all 3 short English meetings, are silent placeholders.** Text-to-speech credits ran out, so playback has silent stretches there. Transcripts, summaries and search are unaffected. Voicing the rest would cost about ₹57. |
+| Full-text search across Devanagari, romanized and English text (Postgres) | **About 25% of the hour-long meeting's lines, and all 3 short English meetings, are left silent on purpose.** Hinglish was the focus, so text-to-speech credit went to the Hinglish meeting. Playback has silent stretches there; transcripts, summaries and search are unaffected. |
 | Highlights, clips, share links, view counting, Open Graph previews | **No video:** seeded meetings are audio, shown as a speaker grid lit by the transcript. Uploaded video plays as video. |
 | Action items you can check off; uploads up to 50 MB | **No auth:** one shared demo workspace. |
 
