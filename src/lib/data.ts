@@ -280,8 +280,23 @@ export type UpcomingEvent = CalendarEvent & {
 };
 
 /** Calendar state for the home page: whether a calendar is connected, and what's next. */
+// The demo calendar's "happening now" event, so a visitor can always send the notetaker in.
+const DEMO_LIVE_EVENT = "demo-design-crit";
+
 export async function listUpcoming(): Promise<{ connected: boolean; events: UpcomingEvent[] }> {
   const client = db();
+  // Once it has ended, roll it forward: started 5 minutes ago, ends in 25.
+  const rolled = new Date();
+  await client
+    .from("calendar_events")
+    .update({
+      starts_at: new Date(rolled.getTime() - 5 * 60_000).toISOString(),
+      ends_at: new Date(rolled.getTime() + 25 * 60_000).toISOString(),
+    })
+    .eq("provider", "google")
+    .eq("external_id", DEMO_LIVE_EVENT)
+    .lte("ends_at", rolled.toISOString());
+
   const [{ count }, upcoming] = await Promise.all([
     client.from("calendar_events").select("id", { count: "exact", head: true }),
     client
@@ -296,7 +311,7 @@ export async function listUpcoming(): Promise<{ connected: boolean; events: Upco
   const { data: live, error } = events.length
     ? await client
         .from("meetings")
-        .select("id, status, calendar_event_id")
+        .select("id, status, calendar_event_id, created_at")
         .in("calendar_event_id", events.map((e) => e.id))
         .in("status", ["joining", "recording", "processing", "ready"])
         .order("created_at", { ascending: false })
@@ -306,7 +321,10 @@ export async function listUpcoming(): Promise<{ connected: boolean; events: Upco
   return {
     connected: Boolean(count),
     events: events.map((e) => {
-      const m = live?.find((x) => x.calendar_event_id === e.id);
+      // Only meetings sent into this occurrence: a rolled-forward event starts fresh.
+      const m = live?.find(
+        (x) => x.calendar_event_id === e.id && Date.parse(x.created_at) >= Date.parse(e.starts_at) - 15 * 60_000,
+      );
       return {
         ...e,
         live_meeting: m ? { id: m.id, status: m.status } : null,
