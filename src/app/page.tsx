@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
 import { LanguageBadge } from "@/components/language-badge";
 import { SetupNotice } from "@/components/setup-notice";
+import { JoinByLink } from "@/components/join-by-link";
 import { Upcoming } from "@/components/upcoming";
 import { listMeetings, listUpcoming, summaryPreviews } from "@/lib/data";
 import { formatClock, formatDayLabel, formatDuration, formatMeetingDate } from "@/lib/format";
@@ -40,6 +41,7 @@ export default async function MeetingsPage() {
       </div>
       {isConfigured() ? (
         <>
+          <JoinByLink />
           <UpcomingSection />
           <MeetingList />
         </>

@@ -184,6 +184,7 @@ The main differentiator. Built on top of Phases 1–4 and threaded through every
   - **recording:** a live timer, the invitees' tiles and Stop.
   - **processing:** "upload the recording".
   - The upload attaches to that same meeting (`POST /api/uploads` with `meetingId`), so calendar → notetaker → recording → transcript works end to end. Diarized speakers replace the invitee placeholders, because which invitee is which voice can't be known.
+- **Join with link:** paste a Zoom, Meet or Teams URL on the home page (`parseMeetingLink`, which rejects lookalike domains) to send the notetaker into your own call, without a calendar event. It runs the same simulated states, then the upload. The recording screen asks for calls under 3 minutes (the timer turns amber after 3:00), and uploads are capped at 5 minutes to protect transcription credits.
 - **Recent:** each meeting shows the first line of its General summary.
 - **Times in IST** throughout (`TIME_ZONE` in `src/lib/format.ts`). The product is for Indian teams, and a fixed zone avoids hydration mismatches.
 

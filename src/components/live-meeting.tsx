@@ -18,6 +18,7 @@ export function LiveMeeting({
   platform,
   startedAt,
   durationMs,
+  joinUrl,
   participants,
 }: {
   meetingId: string;
@@ -25,6 +26,7 @@ export function LiveMeeting({
   platform: MeetingPlatform;
   startedAt: string | null;
   durationMs: number | null;
+  joinUrl: string | null;
   participants: { id: string; name: string; color: string | null }[];
 }) {
   const router = useRouter();
@@ -60,6 +62,8 @@ export function LiveMeeting({
   }, [status]);
 
   const elapsed = startedAt ? Math.max(0, now - Date.parse(startedAt)) : 0;
+  // Demo transcription is paid per minute, so calls are kept short.
+  const overTime = elapsed >= 3 * 60_000;
 
   return (
     <div className="space-y-4">
@@ -97,7 +101,12 @@ export function LiveMeeting({
               <p className="flex items-center gap-2 text-sm font-medium">
                 <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-600" />
                 Recording
-                <span className="font-mono tabular-nums text-muted">{formatTimestamp(elapsed)}</span>
+                <span className={`font-mono tabular-nums ${overTime ? "text-amber-600" : "text-muted"}`}>
+                  {formatTimestamp(elapsed)}
+                </span>
+                <span className={`text-xs font-normal ${overTime ? "text-amber-600" : "text-muted"}`}>
+                  {overTime ? "Past 3 minutes: stop soon" : "Keep it under 3 minutes"}
+                </span>
               </p>
               <button
                 onClick={() => void advance("processing")}
@@ -116,12 +125,22 @@ export function LiveMeeting({
         </div>
       </section>
 
+      {joinUrl && (
+        <p className="truncate text-xs text-muted">
+          Meeting link:{" "}
+          <a href={joinUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+            {joinUrl.replace(/^https?:\/\//, "")}
+          </a>
+        </p>
+      )}
+
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <p className="rounded-lg bg-surface-2 px-4 py-3 text-xs text-muted">
         <span className="font-medium text-text">Demo:</span> the meeting bot is simulated, so it joins and
-        &ldquo;records&rdquo; without capturing audio. Upload the recording when the call ends, and it goes through the
-        same transcription as a real capture: Hindi, English or both mixed.
+        &ldquo;records&rdquo; without capturing audio. Record the call yourself (Zoom, Meet and Teams can all record, or
+        use your phone), then upload it when you stop. It goes through the same transcription as a real capture: Hindi,
+        English or both mixed. Recordings up to 5 minutes; under 3 is quickest.
       </p>
 
       {status === "processing" && (

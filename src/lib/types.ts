@@ -19,6 +19,7 @@ export interface Meeting {
   language: string;
   language_mix: "en" | "hi-en" | "hi";
   hindi_ratio: number;
+  join_url: string | null;
   created_at: string;
 }
 

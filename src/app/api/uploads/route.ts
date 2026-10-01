@@ -1,6 +1,8 @@
 import { db } from "@/lib/supabase";
 
 const MAX_BYTES = 50 * 1024 * 1024; // the media bucket's per-file limit
+// Demo transcription is paid per minute; keep test calls short.
+const MAX_DURATION_MS = 5 * 60_000;
 
 // POST {title, fileName, mime, size, durationMs, meetingId?} -> {meetingId, uploadUrl}
 // Creates the meeting in "processing" (or reuses a calendar meeting whose
@@ -18,6 +20,9 @@ export async function POST(request: Request) {
   const mime = body.mime ?? "";
   if (!/^(audio|video)\//.test(mime)) return Response.json({ error: "Upload an audio or video file" }, { status: 400 });
   if (!body.size || body.size > MAX_BYTES) return Response.json({ error: "Files can be at most 50 MB" }, { status: 400 });
+  if (Number(body.durationMs) > MAX_DURATION_MS) {
+    return Response.json({ error: "This demo transcribes recordings up to 5 minutes. Under 3 is quickest." }, { status: 400 });
+  }
 
   const client = db();
   const now = new Date();

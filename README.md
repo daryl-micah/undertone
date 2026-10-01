@@ -14,7 +14,7 @@ Under that sits the Fathom baseline: playback synced to the transcript, AI summa
 
 | Real | Faked, on purpose |
 |---|---|
-| Playback synced to the transcript, chapters, speaker lanes, deep links (`?t=`, `?clip=`) | **The meeting bot.** It "joins" and "records" (states, timer, Stop) but captures no audio. You upload the recording afterwards, and the page says so. |
+| Playback synced to the transcript, chapters, speaker lanes, deep links (`?t=`, `?clip=`) | **The meeting bot.** Paste a real Zoom, Meet or Teams link (or use a calendar event), and it "joins" and "records" (states, timer, Stop) but captures no audio. You record the call yourself and upload it when you stop; the page says so. Keep test calls under 3 minutes. |
 | **Speech-to-text** with speaker detection: Sarvam `saaras:v3` in `codemix` mode, for the Hinglish meeting and every upload | **The calendar.** "Connect Google Calendar" loads sample events placed around now, with no OAuth. |
 | Summaries and templates (Groq `gpt-oss-120b`), with bullets citing transcript lines | **Seeded audio is text-to-speech.** The meetings were scripted, then voiced with Sarvam, one voice per person. |
 | Hinglish romanization and translation, per line (Groq) | **The English seeded meetings use their script as the transcript.** Only the Hinglish meeting was transcribed from its audio, which is the honest test of the pipeline. |
@@ -65,6 +65,7 @@ See [`Plan.md`](Plan.md) for the phase-by-phase plan and the reasoning behind ea
 - Uploads have their speakers named "Speaker 1…N". Which invitee is which voice isn't known.
 - The Open Graph preview card is English-only, because the default image font has no Devanagari glyphs.
 - Times are shown in IST everywhere.
+- Uploads are capped at 5 minutes (under 3 is quickest), because demo transcription is paid per minute.
 
 ---
 

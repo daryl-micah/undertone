@@ -36,7 +36,8 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
           </Link>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">{meeting.title}</h1>
           <p className="text-sm text-muted">
-            {PLATFORM_LABEL[meeting.platform]} · {participants.length} invited
+            {PLATFORM_LABEL[meeting.platform]}
+            {participants.length > 0 && ` · ${participants.length} invited`}
           </p>
         </div>
         <LiveMeeting
@@ -45,6 +46,7 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
           platform={meeting.platform}
           startedAt={meeting.started_at}
           durationMs={meeting.duration_ms}
+          joinUrl={meeting.join_url}
           participants={participants.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
         />
       </div>
