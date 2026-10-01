@@ -12,11 +12,16 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/calendar/e
     return Response.json({ error: "This event has no video link, so the notetaker can't join" }, { status: 400 });
   }
 
+  // Only a meeting sent into this occurrence: the demo's live event rolls forward,
+  // and an earlier occurrence's unfinished meeting must not be reopened.
   const { data: live } = await client
     .from("meetings")
     .select("id")
     .eq("calendar_event_id", id)
     .in("status", ["joining", "recording", "processing"])
+    .gte("created_at", new Date(Date.parse(event.starts_at) - 15 * 60_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (live) return Response.json({ meetingId: live.id });
 

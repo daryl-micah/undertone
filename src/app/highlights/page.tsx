@@ -12,7 +12,7 @@ export default async function HighlightsPage(props: PageProps<"/highlights">) {
   if (!isConfigured()) return <SetupNotice />;
   const highlights = await listHighlights();
   const mode = parseScriptMode((await props.searchParams).script);
-  const anyHinglish = highlights.some((h) => h.meeting_language_mix === "hi-en");
+  const anyHinglish = highlights.some((h) => h.meeting_language_mix !== "en");
 
   return (
     <div className="space-y-6">

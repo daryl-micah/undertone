@@ -99,7 +99,14 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/uploads/[i
           if (cErr) throw cErr;
         }
 
-        await processLanguage(client, id, progress);
+        // The transcript is saved; a romanization/translation failure (e.g. Groq down)
+        // shouldn't fail the meeting. processLanguage is safe to re-run later.
+        try {
+          await processLanguage(client, id, progress);
+        } catch (e) {
+          console.error(`processLanguage failed for ${id}:`, e);
+          progress("Couldn't translate the Hindi lines; the transcript is saved as spoken");
+        }
 
         const { error: mErr } = await client.from("meetings").update({ status: "ready", duration_ms: durationMs }).eq("id", id);
         if (mErr) throw mErr;

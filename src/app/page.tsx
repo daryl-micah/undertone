@@ -74,7 +74,7 @@ async function UpcomingSection() {
 async function MeetingList() {
   // Hinglish meetings are the product's point, so they're pinned to the top.
   const meetings = (await listMeetings()).sort(
-    (a, b) => Number(b.language_mix === "hi-en") - Number(a.language_mix === "hi-en"),
+    (a, b) => Number(b.language_mix !== "en") - Number(a.language_mix !== "en"),
   );
   const previews = await summaryPreviews(meetings.map((m) => m.id));
 
@@ -100,7 +100,7 @@ async function MeetingList() {
               <div className="flex items-center gap-2">
                 <p className="truncate font-medium">{m.title}</p>
                 <LanguageBadge meeting={m} />
-                {m.language_mix === "hi-en" && <span className="shrink-0 text-xs text-muted">Pinned</span>}
+                {m.language_mix !== "en" && <span className="shrink-0 text-xs text-muted">Pinned</span>}
                 {STATUS_LABEL[m.status] && (
                   <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
                     {STATUS_LABEL[m.status]}

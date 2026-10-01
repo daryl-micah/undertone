@@ -204,9 +204,19 @@ export async function generateSummary(
       source = `Transcript:\n${full}`;
     } else {
       await condense(m, progress);
+      // The model occasionally skips a chapter; ask again once for just those.
+      if (m.chapters.some((c) => !c.summary)) await condense(m, progress);
       source =
         "Notes per chapter (each note ends with the transcript line it came from):\n\n" +
-        m.chapters.map((c) => `### ${formatTimestamp(c.start_ms)} ${c.title}\n${c.summary}`).join("\n\n");
+        m.chapters
+          .map((c) => {
+            // Still nothing: use the chapter's own lines rather than lose it.
+            const body =
+              c.summary ??
+              transcriptLines(m, m.segments.filter((s) => s.start_ms >= c.start_ms && s.start_ms < c.end_ms));
+            return `### ${formatTimestamp(c.start_ms)} ${c.title}\n${body}`;
+          })
+          .join("\n\n");
     }
 
     progress(`Writing the ${template.name} summary`);

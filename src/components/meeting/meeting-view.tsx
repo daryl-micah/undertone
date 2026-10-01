@@ -93,7 +93,8 @@ export function MeetingView({
   const [query, setQuery] = useState(initialQuery);
   const [tab, setTab] = useState<PanelTab>("summary");
   // Hinglish meetings can be read as spoken, romanized or in English; kept in ?script=.
-  const hinglish = languageMix === "hi-en";
+  // Any Hindi (code-mixed or mostly Hindi) can be read romanized or in English.
+  const hinglish = languageMix !== "en";
   const [scriptMode, setScriptMode] = useState<ScriptMode>(hinglish ? initialScript : "mixed");
   const textOf = useCallback((s: TranscriptSegment) => segmentText(s, scriptMode), [scriptMode]);
   const changeScript = useCallback((mode: ScriptMode) => {

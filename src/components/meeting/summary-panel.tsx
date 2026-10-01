@@ -42,6 +42,7 @@ export function SummaryPanel({
         if (!res.body) throw new Error(`Request failed (${res.status})`);
         const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
         let buffer = "";
+        let finished = false;
         for (;;) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -51,10 +52,16 @@ export function SummaryPanel({
           for (const line of lines.filter(Boolean)) {
             const msg = JSON.parse(line) as { progress?: string; summary?: Summary; error?: string };
             if (msg.progress) setJob((j) => j && { ...j, progress: msg.progress! });
-            if (msg.summary) setSummaries((s) => ({ ...s, [key]: msg.summary! }));
+            if (msg.summary) {
+              finished = true;
+              setSummaries((s) => ({ ...s, [key]: msg.summary! }));
+            }
             if (msg.error) throw new Error(msg.error);
           }
         }
+        // A cut-off stream (timeout, dropped connection) has no result. Without an
+        // error here, the "generate on open" effect would start over, forever.
+        if (!finished) throw new Error("The summary didn't finish. Try again.");
       } catch (e) {
         setErrors((errs) => ({ ...errs, [key]: e instanceof Error ? e.message : String(e) }));
       } finally {

@@ -51,7 +51,7 @@ export async function textToSpeech({ text, voice, languageCode, pace = 1.0, samp
 /**
  * Batch speech to text with diarization (the REST endpoint is limited to 30 s and
  * has no diarization). codemix mode keeps Hindi in Devanagari and English in Latin.
- * @param {{ audio: Buffer | Uint8Array, fileName: string, codec?: string, mime?: string, numSpeakers?: number, apiKey?: string, progress?: (msg: string) => void }} o
+ * @param {{ audio: Buffer | Uint8Array, fileName: string, codec?: string, mime?: string, numSpeakers?: number, apiKey?: string, progress?: (msg: string) => void, timeoutMs?: number }} o
  * @returns {Promise<object>} Sarvam's raw output JSON; read speakers with diarizedEntries().
  */
 export async function transcribeCodemix({
@@ -62,6 +62,8 @@ export async function transcribeCodemix({
   numSpeakers,
   apiKey = process.env.SARVAM_API_KEY,
   progress = () => {},
+  // Below Vercel's 300 s function limit, so callers can still mark the meeting failed.
+  timeoutMs = 240_000,
 }) {
   progress("Sending audio for transcription");
   const job = await call("/speech-to-text/job/v1", apiKey, {
@@ -102,6 +104,9 @@ export async function transcribeCodemix({
   for (;;) {
     status = await call(`/speech-to-text/job/v1/${job.job_id}/status`, apiKey);
     if (status.job_state === "Completed" || status.job_state === "Failed") break;
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(`Transcription is taking too long (job ${job.job_id} still ${status.job_state})`);
+    }
     progress(`Transcribing (${Math.round((Date.now() - started) / 1000)}s)`);
     await new Promise((r) => setTimeout(r, 5000));
   }

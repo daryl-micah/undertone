@@ -58,7 +58,7 @@ export default async function SharedPage(props: PageProps<"/s/[token]">) {
   }
 
   const { meeting, participants, share } = page;
-  const hinglish = meeting.language_mix === "hi-en";
+  const hinglish = meeting.language_mix !== "en";
   const byId = new Map(participants.map((p, i) => [p.id, { name: p.name, color: speakerColor(p.color, i) }]));
   const scriptParam = mode !== "mixed" ? `&script=${mode}` : "";
 
