@@ -11,7 +11,11 @@ export function HeaderSearch() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (e.key !== "/" || t.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (
+        e.key !== "/" ||
+        t.closest("input, textarea, select, [contenteditable=true]")
+      )
+        return;
       e.preventDefault();
       ref.current?.focus();
     };
@@ -32,7 +36,7 @@ export function HeaderSearch() {
       <input
         ref={ref}
         type="search"
-        placeholder="Search meetings  /"
+        placeholder="Search meetings"
         aria-label="Search meetings"
         className="w-32 rounded-md border border-border bg-bg px-2.5 py-1 text-sm outline-none transition-[width] focus:w-56 focus:border-accent sm:w-44"
       />
