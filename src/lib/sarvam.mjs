@@ -1,6 +1,13 @@
 // Sarvam AI calls shared by the seed pipeline and the upload path.
 
 const API = "https://api.sarvam.ai";
+
+// Sarvam's batch STT misreads undeclared uploads (an MP3 came back as "audio/wav"
+// with an empty transcript), so always declare the codec and content type.
+const CODECS = { mp3: "mp3", wav: "wav", m4a: "x-m4a", mp4: "mp4", webm: "webm", ogg: "ogg", aac: "aac", flac: "flac" };
+export function codecFor(fileName) {
+  return CODECS[fileName.split(".").pop()?.toLowerCase() ?? ""];
+}
 export const STT_MODEL = "saaras:v3";
 
 function headers(apiKey, json = true) {
@@ -44,10 +51,18 @@ export async function textToSpeech({ text, voice, languageCode, pace = 1.0, samp
 /**
  * Batch speech to text with diarization (the REST endpoint is limited to 30 s and
  * has no diarization). codemix mode keeps Hindi in Devanagari and English in Latin.
- * @param {{ audio: Buffer | Uint8Array, fileName: string, numSpeakers?: number, apiKey?: string, progress?: (msg: string) => void }} o
- * @returns {Promise<{ entries: { transcript: string, start_time_seconds: number, end_time_seconds: number, speaker_id: string }[], language_code?: string }>}
+ * @param {{ audio: Buffer | Uint8Array, fileName: string, codec?: string, mime?: string, numSpeakers?: number, apiKey?: string, progress?: (msg: string) => void }} o
+ * @returns {Promise<object>} Sarvam's raw output JSON; read speakers with diarizedEntries().
  */
-export async function transcribeCodemix({ audio, fileName, numSpeakers, apiKey = process.env.SARVAM_API_KEY, progress = () => {} }) {
+export async function transcribeCodemix({
+  audio,
+  fileName,
+  codec,
+  mime,
+  numSpeakers,
+  apiKey = process.env.SARVAM_API_KEY,
+  progress = () => {},
+}) {
   progress("Sending audio for transcription");
   const job = await call("/speech-to-text/job/v1", apiKey, {
     method: "POST",
@@ -59,6 +74,7 @@ export async function transcribeCodemix({ audio, fileName, numSpeakers, apiKey =
         with_timestamps: true,
         with_diarization: true,
         ...(numSpeakers ? { num_speakers: numSpeakers } : {}),
+        ...(codec ? { input_audio_codec: codec } : {}),
       },
     }),
   });
@@ -71,7 +87,10 @@ export async function transcribeCodemix({ audio, fileName, numSpeakers, apiKey =
   if (!target) throw new Error("Sarvam returned no upload URL");
   const put = await fetch(target, {
     method: "PUT",
-    headers: upload.storage_container_type?.startsWith("Azure") ? { "x-ms-blob-type": "BlockBlob" } : {},
+    headers: {
+      ...(upload.storage_container_type?.startsWith("Azure") ? { "x-ms-blob-type": "BlockBlob" } : {}),
+      ...(mime ? { "content-type": mime, "x-ms-blob-content-type": mime } : {}),
+    },
     body: audio,
   });
   if (!put.ok) throw new Error(`Uploading audio to Sarvam failed: ${put.status} ${(await put.text()).slice(0, 200)}`);
@@ -98,6 +117,19 @@ export async function transcribeCodemix({ audio, fileName, numSpeakers, apiKey =
   });
   const res = await fetch(download.download_urls[outName].file_url);
   if (!res.ok) throw new Error(`Downloading transcript failed: ${res.status}`);
-  const result = await res.json();
-  return { entries: result.diarized_transcript?.entries ?? [], language_code: result.language_code };
+  return res.json();
+}
+
+/**
+ * Diarized entries from a batch STT result. Throws (showing the shape) when there
+ * are none, rather than returning an empty transcript.
+ * @returns {{ transcript: string, start_time_seconds: number, end_time_seconds: number, speaker_id: string }[]}
+ */
+export function diarizedEntries(raw) {
+  const entries = raw?.diarized_transcript?.entries;
+  if (Array.isArray(entries) && entries.length) return entries;
+  throw new Error(
+    `STT output has no diarized entries (keys: ${Object.keys(raw ?? {}).join(", ")}; ` +
+      `diarized_transcript: ${JSON.stringify(raw?.diarized_transcript)?.slice(0, 200)})`,
+  );
 }

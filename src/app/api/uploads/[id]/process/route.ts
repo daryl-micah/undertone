@@ -1,5 +1,5 @@
 import { processLanguage } from "@/lib/hinglish.mjs";
-import { transcribeCodemix } from "@/lib/sarvam.mjs";
+import { codecFor, diarizedEntries, transcribeCodemix } from "@/lib/sarvam.mjs";
 import { SPEAKER_COLORS } from "@/lib/speakers";
 import { db } from "@/lib/supabase";
 
@@ -29,12 +29,15 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/uploads/[i
         const file = await client.storage.from("media").download(media.storage_path);
         if (file.error) throw new Error(`The upload didn't arrive: ${file.error.message}`);
 
-        const { entries } = await transcribeCodemix({
+        const fileName = media.storage_path.split("/").pop();
+        const raw = await transcribeCodemix({
           audio: new Uint8Array(await file.data.arrayBuffer()),
-          fileName: media.storage_path.split("/").pop(),
+          fileName,
+          codec: codecFor(fileName),
+          mime: media.mime,
           progress,
         });
-        const lines = entries
+        const lines = diarizedEntries(raw)
           .map((e) => ({
             speakerId: String(e.speaker_id),
             start: Math.round(e.start_time_seconds * 1000),

@@ -28,7 +28,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import ffmpegPath from "ffmpeg-static";
 import { processLanguage } from "../src/lib/hinglish.mjs";
-import { STT_MODEL, textToSpeech, transcribeCodemix } from "../src/lib/sarvam.mjs";
+import { diarizedEntries, STT_MODEL, textToSpeech, transcribeCodemix } from "../src/lib/sarvam.mjs";
 
 const SAMPLE_RATE = 22050;
 const TTS_MODEL = "bulbul:v3"; // part of the TTS cache key
@@ -149,14 +149,17 @@ async function transcribe(mp3Path, lines, timings, meta) {
     result = await transcribeCodemix({
       audio: mp3,
       fileName: `${slug}.mp3`,
+      codec: "mp3",
+      mime: "audio/mpeg",
       numSpeakers: meta.participants.length,
       progress: (m) => console.log(`stt: ${m}`),
     });
+    diarizedEntries(result); // never cache an empty result
     await mkdir("media/stt-cache", { recursive: true });
     await writeFile(cacheFile, JSON.stringify(result, null, 2));
   }
 
-  const entries = result.entries
+  const entries = diarizedEntries(result)
     .map((e) => ({
       speakerId: String(e.speaker_id),
       start: Math.round(e.start_time_seconds * 1000),
@@ -164,7 +167,6 @@ async function transcribe(mp3Path, lines, timings, meta) {
       text: (e.transcript ?? "").trim(),
     }))
     .filter((e) => e.text && e.end > e.start);
-  if (!entries.length) throw new Error("STT returned no diarized entries");
 
   const overlap = (a, b) => Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start));
   const votes = {};
