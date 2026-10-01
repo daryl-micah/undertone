@@ -51,6 +51,7 @@ export function UploadForm({ meetingId: existingMeetingId }: { meetingId?: strin
       if (!res.body) throw new Error(`Processing failed (${res.status})`);
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = "";
+      let finished = false;
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -62,11 +63,14 @@ export function UploadForm({ meetingId: existingMeetingId }: { meetingId?: strin
           if (msg.progress) setStage({ kind: "working", message: msg.progress });
           if (msg.error) throw new Error(msg.error);
           if (msg.done) {
+            finished = true;
             router.push(`/meetings/${meetingId}`);
             router.refresh();
           }
         }
       }
+      // A cut-off stream (timeout, dropped connection) would otherwise spin forever.
+      if (!finished) throw new Error("Processing didn't finish. Refresh the meeting page in a minute to check on it.");
     } catch (err) {
       setStage({ kind: "error", message: err instanceof Error ? err.message : String(err) });
     }

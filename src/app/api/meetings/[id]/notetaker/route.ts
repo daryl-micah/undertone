@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, notFound, readJson } from "@/lib/http";
 
 // PATCH {status: "recording" | "processing"}: advance the simulated notetaker.
 // joining -> recording (admitted to the call) -> processing (recording stopped).
@@ -6,7 +7,10 @@ const NEXT: Record<string, string> = { joining: "recording", recording: "process
 
 export async function PATCH(request: Request, ctx: RouteContext<"/api/meetings/[id]/notetaker">) {
   const { id } = await ctx.params;
-  const { status } = (await request.json()) as { status?: string };
+  if (!isUuid(id)) return notFound("meeting not found");
+  const body = await readJson<{ status: string }>(request);
+  if (!body) return badBody();
+  const { status } = body;
   const client = db();
   const { data: meeting } = await client.from("meetings").select("status, started_at").eq("id", id).maybeSingle();
   if (!meeting) return Response.json({ error: "meeting not found" }, { status: 404 });

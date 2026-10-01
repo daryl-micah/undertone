@@ -1,20 +1,22 @@
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, readJson } from "@/lib/http";
 
 // POST {target_type, target_id, allow_full_meeting?, created_by_name?} -> the share.
 // Reuses an existing link for the same target and permission, so sharing the
 // same clip twice gives the same URL and one view count.
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    target_type?: string;
-    target_id?: string;
-    allow_full_meeting?: boolean;
-    created_by_name?: string;
-  };
+  const body = await readJson<{
+    target_type: string;
+    target_id: string;
+    allow_full_meeting: boolean;
+    created_by_name: string;
+  }>(request);
+  if (!body) return badBody();
   const type = body.target_type;
   if (type !== "meeting" && type !== "highlight") {
     return Response.json({ error: "target_type must be meeting or highlight" }, { status: 400 });
   }
-  if (!body.target_id || !/^[0-9a-f-]{36}$/i.test(body.target_id)) {
+  if (!isUuid(body.target_id)) {
     return Response.json({ error: "target_id is required" }, { status: 400 });
   }
   // A shared meeting is the whole meeting by definition.

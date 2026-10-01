@@ -1,5 +1,6 @@
 import { processLanguage } from "@/lib/hinglish.mjs";
 import { codecFor, diarizedEntries, transcribeCodemix } from "@/lib/sarvam.mjs";
+import { isUuid, notFound } from "@/lib/http";
 import { SPEAKER_COLORS } from "@/lib/speakers";
 import { db } from "@/lib/supabase";
 
@@ -7,16 +8,37 @@ import { db } from "@/lib/supabase";
 export const maxDuration = 300;
 
 const PART_MS = 5 * 60_000;
+// Longer than maxDuration: a claim this old belongs to a function that was killed.
+const STALE_CLAIM_MS = 6 * 60_000;
 
 // POST -> NDJSON stream of {"progress"} lines, then {"done": true} or {"error"}.
 // Transcribes the uploaded file (saaras:v3, codemix, diarization), stores the
 // segments, then runs the same Hinglish step as the seeded meetings.
 export async function POST(_request: Request, ctx: RouteContext<"/api/uploads/[id]/process">) {
   const { id } = await ctx.params;
+  if (!isUuid(id)) return notFound("meeting not found");
   const client = db();
   const { data: meeting } = await client.from("meetings").select("id, status, duration_ms").eq("id", id).maybeSingle();
-  if (!meeting) return Response.json({ error: "meeting not found" }, { status: 404 });
+  if (!meeting) return notFound("meeting not found");
   if (meeting.status !== "processing") return Response.json({ error: `meeting is ${meeting.status}` }, { status: 409 });
+
+  // Claim the meeting atomically: of two concurrent requests (a double click, a
+  // retry), only one wins the conditional update and transcribes.
+  const now = new Date();
+  const { data: claimed, error: claimErr } = await client
+    .from("meetings")
+    .update({ processing_started_at: now.toISOString() })
+    .eq("id", id)
+    .eq("status", "processing")
+    .or(`processing_started_at.is.null,processing_started_at.lt.${new Date(now.getTime() - STALE_CLAIM_MS).toISOString()}`)
+    .select("id");
+  if (claimErr) return Response.json({ error: claimErr.message }, { status: 500 });
+  if (!claimed.length) return Response.json({ error: "This recording is already being processed" }, { status: 409 });
+  const { count: existing } = await client
+    .from("transcript_segments")
+    .select("id", { count: "exact", head: true })
+    .eq("meeting_id", id);
+  if (existing) return Response.json({ error: "This meeting already has a transcript" }, { status: 409 });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -84,7 +106,10 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/uploads/[i
         );
         if (sErr) throw sErr;
 
-        const durationMs = Math.max(meeting.duration_ms ?? 0, lines.at(-1)!.end);
+        // The recording's own length (measured in the browser) when known, never
+        // shorter than the last line. Not the simulated "recording" time: a notetaker
+        // left running for 10 minutes may come back with a 2-minute file.
+        const durationMs = Math.max(media.duration_ms ?? meeting.duration_ms ?? 0, lines.at(-1)!.end);
         // Long recordings get time-based chapters so summaries can condense them.
         if (durationMs > 2 * PART_MS) {
           const parts = Math.ceil(durationMs / PART_MS);

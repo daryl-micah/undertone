@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, notFound, readJson } from "@/lib/http";
 
 const MAX_CLIP_MS = 5 * 60_000;
 
@@ -6,13 +7,15 @@ const MAX_CLIP_MS = 5 * 60_000;
 // The excerpt is taken from the transcript here, not trusted from the client.
 export async function POST(request: Request, ctx: RouteContext<"/api/meetings/[id]/highlights">) {
   const { id } = await ctx.params;
-  const body = (await request.json()) as {
-    start_ms?: number;
-    end_ms?: number;
-    title?: string;
-    note?: string;
-    created_by_name?: string;
-  };
+  if (!isUuid(id)) return notFound("meeting not found");
+  const body = await readJson<{
+    start_ms: number;
+    end_ms: number;
+    title: string;
+    note: string;
+    created_by_name: string;
+  }>(request);
+  if (!body) return badBody();
   const start = Math.round(Number(body.start_ms));
   const end = Math.round(Number(body.end_ms));
   if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) {

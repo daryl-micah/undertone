@@ -1,9 +1,13 @@
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, notFound, readJson } from "@/lib/http";
 
 // PATCH {completed: boolean} -> the updated action item.
 export async function PATCH(request: Request, ctx: RouteContext<"/api/action-items/[id]">) {
   const { id } = await ctx.params;
-  const { completed } = (await request.json()) as { completed?: boolean };
+  if (!isUuid(id)) return notFound();
+  const body = await readJson<{ completed: boolean }>(request);
+  if (!body) return badBody();
+  const { completed } = body;
   if (typeof completed !== "boolean") return Response.json({ error: "completed must be a boolean" }, { status: 400 });
 
   const { data, error } = await db()

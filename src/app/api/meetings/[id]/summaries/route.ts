@@ -1,5 +1,6 @@
 import { generateSummary } from "@/lib/summarize";
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, notFound, readJson } from "@/lib/http";
 
 // The first summary of a long meeting condenses it chapter by chapter under Groq's
 // rate limit, which can take a couple of minutes.
@@ -9,7 +10,10 @@ export const maxDuration = 300;
 // {"summary": {...}} or {"error": "..."}.
 export async function POST(request: Request, ctx: RouteContext<"/api/meetings/[id]/summaries">) {
   const { id } = await ctx.params;
-  const { template, force } = (await request.json()) as { template?: string; force?: boolean };
+  if (!isUuid(id)) return notFound("meeting not found");
+  const body = await readJson<{ template: string; force: boolean }>(request);
+  if (!body) return badBody();
+  const { template, force } = body;
   if (!template) return Response.json({ error: "template is required" }, { status: 400 });
 
   if (!force) {

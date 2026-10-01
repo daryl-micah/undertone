@@ -1,10 +1,12 @@
 import { SPEAKER_COLORS } from "@/lib/speakers";
 import { db } from "@/lib/supabase";
+import { isUuid, notFound } from "@/lib/http";
 
 // POST: send the (simulated) notetaker into a calendar event. Creates the meeting
 // in "joining" with the invitees as participants, or returns the one already live.
 export async function POST(_request: Request, ctx: RouteContext<"/api/calendar/events/[id]/notetaker">) {
   const { id } = await ctx.params;
+  if (!isUuid(id)) return notFound("event not found");
   const client = db();
   const { data: event } = await client.from("calendar_events").select("*").eq("id", id).maybeSingle();
   if (!event) return Response.json({ error: "event not found" }, { status: 404 });

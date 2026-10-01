@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase";
+import { badBody, isUuid, notFound, readJson } from "@/lib/http";
 
 const MAX_BYTES = 50 * 1024 * 1024; // the media bucket's per-file limit
 // Demo transcription is paid per minute; keep test calls short.
@@ -9,14 +10,16 @@ const MAX_DURATION_MS = 5 * 60_000;
 // simulated notetaker just stopped recording) and a signed URL the browser
 // uploads to directly (Vercel functions can't take request bodies this large).
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    title?: string;
-    fileName?: string;
-    mime?: string;
-    size?: number;
-    durationMs?: number;
-    meetingId?: string;
-  };
+  const body = await readJson<{
+    title: string;
+    fileName: string;
+    mime: string;
+    size: number;
+    durationMs: number;
+    meetingId: string;
+  }>(request);
+  if (!body) return badBody();
+  if (body.meetingId != null && !isUuid(body.meetingId)) return notFound("meeting not found");
   const mime = body.mime ?? "";
   if (!/^(audio|video)\//.test(mime)) return Response.json({ error: "Upload an audio or video file" }, { status: 400 });
   if (!body.size || body.size > MAX_BYTES) return Response.json({ error: "Files can be at most 50 MB" }, { status: 400 });
