@@ -28,6 +28,7 @@ export function Transcript({
   onScriptChange,
   onSeek,
   onHighlightRange,
+  hiddenOnPhone,
 }: {
   participants: ViewParticipant[];
   segments: TranscriptSegment[];
@@ -43,6 +44,8 @@ export function Transcript({
   onScriptChange: (m: ScriptMode) => void;
   onSeek: (ms: number, play?: boolean) => void;
   onHighlightRange: (start: number, end: number) => void;
+  /** On phones the transcript is a tab; hidden while another tab is selected. */
+  hiddenOnPhone: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -73,6 +76,12 @@ export function Transcript({
   useEffect(() => {
     if (following && activeIndex >= 0) scrollToIndex(activeIndex);
   }, [activeIndex, following]);
+
+  // A hidden box can't scroll, so jump to "now" when the phone tab opens.
+  useEffect(() => {
+    if (!hiddenOnPhone && following && activeIndex >= 0) scrollToIndex(activeIndex, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hiddenOnPhone]);
 
   const q = query.trim().toLowerCase();
   const searching = q.length >= 2;
@@ -115,10 +124,11 @@ export function Transcript({
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-[70vh] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-7rem)] lg:self-start"
+      className={`relative ${hiddenOnPhone ? "hidden lg:flex" : "flex"} h-[70vh] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-7rem)] lg:self-start`}
     >
       <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-        <h2 className="px-1 text-sm font-medium">Transcript</h2>
+        {/* On phones the "Transcript" tab already labels this box. */}
+        <h2 className="hidden px-1 text-sm font-medium lg:block">Transcript</h2>
         <div className="relative ml-auto flex min-w-0 flex-1 items-center">
           <input
             type="search"

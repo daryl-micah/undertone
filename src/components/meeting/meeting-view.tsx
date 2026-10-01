@@ -13,7 +13,7 @@ import type {
   TranscriptSegment,
 } from "@/lib/types";
 import { HighlightComposer, snapToLines } from "./highlight-composer";
-import { Panels } from "./panels";
+import { Panels, type PanelTab } from "./panels";
 import { Stage } from "./stage";
 import { Timeline } from "./timeline";
 import { Transcript } from "./transcript";
@@ -91,6 +91,7 @@ export function MeetingView({
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
   const [query, setQuery] = useState(initialQuery);
+  const [tab, setTab] = useState<PanelTab>("summary");
   // Hinglish meetings can be read as spoken, romanized or in English; kept in ?script=.
   const hinglish = languageMix === "hi-en";
   const [scriptMode, setScriptMode] = useState<ScriptMode>(hinglish ? initialScript : "mixed");
@@ -232,7 +233,7 @@ export function MeetingView({
   }, [query, segments, textOf]);
 
   return (
-    // Mobile order: player, transcript, panels. Desktop: player and panels left, transcript right.
+    // Phones: player, then tabs (Transcript is one of them). Desktop: player and panels left, transcript right.
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:grid-rows-[auto_1fr] lg:gap-x-6">
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
         <section className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -322,27 +323,10 @@ export function MeetingView({
         </section>
       </div>
 
-      <Transcript
-        participants={participants}
-        segments={segments}
-        activeIndex={activeIndex}
-        playing={playing}
-        query={query}
-        onQueryChange={setQuery}
-        matches={matches}
-        highlights={highlights}
-        textOf={textOf}
-        scriptMode={hinglish ? scriptMode : null}
-        onScriptChange={changeScript}
-        onSeek={seek}
-        onHighlightRange={(start, end) => {
-          mediaRef.current?.pause();
-          setComposer({ start, end });
-        }}
-      />
-
       <div className="min-w-0 lg:col-start-1 lg:row-start-2">
         <Panels
+          tab={tab}
+          onTabChange={setTab}
           meetingId={meetingId}
           templates={templates}
           summaries={summaries}
@@ -361,6 +345,26 @@ export function MeetingView({
           }}
         />
       </div>
+
+      <Transcript
+        participants={participants}
+        segments={segments}
+        activeIndex={activeIndex}
+        playing={playing}
+        query={query}
+        onQueryChange={setQuery}
+        matches={matches}
+        highlights={highlights}
+        textOf={textOf}
+        scriptMode={hinglish ? scriptMode : null}
+        onScriptChange={changeScript}
+        onSeek={seek}
+        hiddenOnPhone={tab !== "transcript"}
+        onHighlightRange={(start, end) => {
+          mediaRef.current?.pause();
+          setComposer({ start, end });
+        }}
+      />
 
       {composer && (
         <HighlightComposer

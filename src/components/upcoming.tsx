@@ -106,7 +106,7 @@ export function Upcoming({ connected, rows }: { connected: boolean; rows: Upcomi
                     <span className="hidden w-24 shrink-0 font-mono text-xs tabular-nums text-muted sm:block">{r.time}</span>
                     <div className="min-w-0 flex-1 basis-40">
                       <p className="flex items-center gap-2 text-sm font-medium sm:truncate">
-                        {r.happeningNow && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-rose-600" aria-label="Happening now" />}
+                        {r.happeningNow && <span role="img" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-rose-600" aria-label="Happening now" />}
                         <span className="line-clamp-2 sm:truncate">{r.title}</span>
                       </p>
                       <p className="text-xs text-muted">

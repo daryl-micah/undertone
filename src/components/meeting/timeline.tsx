@@ -59,7 +59,8 @@ export function Timeline({
           onPointerUp={() => setDragging(false)}
           onPointerLeave={() => setHover(null)}
           role="slider"
-          aria-label="Seek"
+          tabIndex={0}
+          aria-label="Seek (left and right arrows skip 5 seconds)"
           aria-valuemin={0}
           aria-valuemax={Math.round(durationMs / 1000)}
           aria-valuenow={Math.round(ms / 1000)}

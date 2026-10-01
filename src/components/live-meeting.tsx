@@ -80,7 +80,7 @@ export function LiveMeeting({
             <div className="relative flex aspect-[16/9] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-white/20 bg-[#16161b]">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-accent text-xs font-semibold text-white">u</span>
               <span className="text-[11px] text-white/85">Undertone Notetaker</span>
-              {status === "joining" && <span className="text-[10px] text-white/50">in the waiting room</span>}
+              {status === "joining" && <span className="text-[10px] text-white/65">in the waiting room</span>}
             </div>
           </div>
         </div>

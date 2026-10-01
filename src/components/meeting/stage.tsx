@@ -39,7 +39,7 @@ export function Stage({
                 {speaking && playing && <SpeakingBars />}
                 <span className="truncate sm:hidden">{p.name.split(" ")[0]}</span>
                 <span className="hidden truncate sm:inline">{p.name}</span>
-                {p.is_external && <span className="hidden shrink-0 text-white/45 sm:inline">· external</span>}
+                {p.is_external && <span className="hidden shrink-0 text-white/65 sm:inline">· external</span>}
               </span>
             </div>
           );

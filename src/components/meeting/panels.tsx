@@ -9,9 +9,12 @@ import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate } from "@
 import type { ViewParticipant } from "./meeting-view";
 import { SummaryPanel } from "./summary-panel";
 
-type Tab = "summary" | "chapters" | "actions" | "highlights" | "speakers";
+/** "transcript" is a tab only on phones; on desktop the transcript has its own column. */
+export type PanelTab = "transcript" | "summary" | "chapters" | "actions" | "highlights" | "speakers";
 
 export function Panels({
+  tab,
+  onTabChange,
   meetingId,
   templates,
   summaries,
@@ -26,6 +29,8 @@ export function Panels({
   onPlayClip,
   onDeleteHighlight,
 }: {
+  tab: PanelTab;
+  onTabChange: (t: PanelTab) => void;
   meetingId: string;
   templates: SummaryTemplate[];
   summaries: Summary[];
@@ -40,9 +45,11 @@ export function Panels({
   onPlayClip: (h: Highlight) => void;
   onDeleteHighlight: (h: Highlight) => void;
 }) {
-  const [tab, setTab] = useState<Tab>("summary");
+
   const [copied, setCopied] = useState(false);
-  const tabs: { key: Tab; label: string; count?: number }[] = [
+  const setTab = onTabChange;
+  const tabs: { key: PanelTab; label: string; count?: number; phoneOnly?: boolean }[] = [
+    { key: "transcript", label: "Transcript", phoneOnly: true },
     { key: "summary", label: "Summary" },
     { key: "chapters", label: "Chapters", count: chapters.length },
     { key: "actions", label: "Action items", count: actionItems.length },
@@ -61,7 +68,7 @@ export function Panels({
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`shrink-0 border-b-2 px-3 py-2.5 text-sm ${
+            className={`shrink-0 border-b-2 px-3 py-2.5 text-sm ${t.phoneOnly ? "lg:hidden" : ""} ${
               tab === t.key ? "border-accent font-medium text-text" : "border-transparent text-muted hover:text-text"
             }`}
           >
@@ -71,9 +78,13 @@ export function Panels({
         ))}
       </div>
 
-      <div className="p-2">
-        {tab === "summary" && (
-          <SummaryPanel meetingId={meetingId} templates={templates} initialSummaries={summaries} onSeek={onSeek} />
+      <div className={tab === "transcript" ? "lg:p-2" : "p-2"}>
+        {(tab === "summary" || tab === "transcript") && (
+          // With the phone-only Transcript tab selected, phones show the transcript below
+          // this bar instead; a widened window falls back to the summary here.
+          <div className={tab === "transcript" ? "hidden lg:block" : undefined}>
+            <SummaryPanel meetingId={meetingId} templates={templates} initialSummaries={summaries} onSeek={onSeek} />
+          </div>
         )}
 
         {tab === "chapters" && (

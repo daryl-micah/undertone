@@ -187,15 +187,16 @@ The main differentiator. Built on top of Phases 1–4 and threaded through every
 - **Recent:** each meeting shows the first line of its General summary.
 - **Times in IST** throughout (`TIME_ZONE` in `src/lib/format.ts`). The product is for Indian teams, and a fixed zone avoids hydration mismatches.
 
-## Phase 10: Polish and walkthrough
-- **Loading, empty and error states:**
-  - A meeting still processing.
-  - A summary that failed.
-  - A meeting with no action items.
-- **Mobile and accessibility:**
-  - The meeting page works on a phone, with the player on top and tabs for Transcript, Summary and Highlights.
-  - Everything is reachable by keyboard.
-- **Walkthrough (README):** what's real vs. faked (capture layer), what was cut and why, and how the 8-person hour-long call holds up.
+## Phase 10: Polish and walkthrough ✅
+- **States:**
+  - Global error page (Next 16's `retry()`) and not-found page.
+  - A loading skeleton for the meeting page, shown instantly once Next has prefetched the meeting route's loading shell.
+  - Already in place and checked: processing and failed meetings, a failed summary with Try again, and empty action items and highlights.
+- **Phones:** the meeting page is the player on top, then tabs where **Transcript** is a phone-only tab next to Summary, Chapters, Action items, Highlights and Speakers. It's one transcript instance, shown and hidden with CSS, so following playback and search don't run twice. Desktop is unchanged.
+- **Keyboard and accessibility:**
+  - A visible `:focus-visible` ring everywhere, and a focusable scrubber (←/→ skip 5 s).
+  - axe (WCAG 2 A/AA) reports no violations on home, meeting, Hinglish meeting, search and highlights. That took darker light-mode teal, sky and orange speaker colors (contrast was 3.6–4.1:1) and a role on the "happening now" dot.
+- **Walkthrough:** `README.md` covers the pitch, a 5-minute tour, what's real vs. faked (including the silent placeholder audio), how the 8-person hour holds up (measured), the Hinglish pipeline's results, what was cut and why, and setup and deploy.
 
 ---
 
