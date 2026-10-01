@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ActionItemCheck } from "@/components/action-item-check";
+import { ShareButton } from "@/components/share-dialog";
 import { clipTitle, formatDuration, formatTimestamp } from "@/lib/format";
 import { speakerColor } from "@/lib/speakers";
 import type { ActionItem, Chapter, Highlight, Summary, SummaryTemplate } from "@/lib/types";
@@ -153,6 +154,12 @@ export function Panels({
                       <span className="font-sans">{h.created_by_name}</span>
                     </span>
                   </button>
+                  <ShareButton
+                    targetType="highlight"
+                    targetId={h.id}
+                    label={clipTitle({ title: h.title, excerpt: excerptOf(h) })}
+                    className="shrink-0 rounded-md border border-border px-2 py-0.5 text-xs hover:bg-surface"
+                  />
                   <button
                     onClick={() => confirm("Delete this highlight?") && onDeleteHighlight(h)}
                     aria-label={`Delete highlight: ${clipTitle({ title: h.title, excerpt: excerptOf(h) })}`}

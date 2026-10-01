@@ -8,6 +8,7 @@ import type {
   Meeting,
   MeetingPlatform,
   Participant,
+  ShareLink,
   Summary,
   SummaryTemplate,
   TranscriptSegment,
@@ -172,5 +173,99 @@ export async function getMeeting(id: string): Promise<MeetingDetail | null> {
     media: (media.data as MediaAsset[]).map((m) => ({ ...m, url: mediaUrl(m.storage_path) })),
     templates: templates.data as SummaryTemplate[],
     summaries: summaries.data as Summary[],
+  };
+}
+
+// --- Sharing --------------------------------------------------------------------
+
+export type SharePage =
+  | {
+      kind: "highlight";
+      share: ShareLink;
+      highlight: Highlight;
+      meeting: Meeting;
+      participants: Participant[];
+      segments: TranscriptSegment[];
+      media: (MediaAsset & { url: string }) | null;
+    }
+  | {
+      kind: "meeting";
+      share: ShareLink;
+      meeting: Meeting;
+      participants: Participant[];
+      summary: Summary | null;
+      actionItems: ActionItem[];
+    };
+
+/**
+ * A shared highlight or meeting by token. countView records a view atomically
+ * (the page does; metadata and preview images don't). Expired or unknown tokens
+ * return null.
+ */
+export async function getSharePage(token: string, countView: boolean): Promise<SharePage | null> {
+  if (!/^[0-9a-f]{32}$/.test(token)) return null;
+  const client = db();
+  let share: ShareLink | undefined;
+  if (countView) {
+    const { data, error } = await client.rpc("record_share_view", { share_token: token });
+    if (error) throw error;
+    share = (data as ShareLink[])[0];
+  } else {
+    const { data, error } = await client.from("share_links").select("*").eq("token", token).maybeSingle();
+    if (error) throw error;
+    share = data && (!data.expires_at || Date.parse(data.expires_at) > Date.now()) ? (data as ShareLink) : undefined;
+  }
+  if (!share) return null;
+
+  if (share.target_type === "highlight") {
+    const { data: highlight } = await client.from("highlights").select("*").eq("id", share.target_id).maybeSingle();
+    if (!highlight) return null;
+    const [meeting, participants, segments, media] = await Promise.all([
+      client.from("meetings").select("*").eq("id", highlight.meeting_id).single(),
+      client.from("participants").select("*").eq("meeting_id", highlight.meeting_id),
+      client
+        .from("transcript_segments")
+        .select("id, meeting_id, seq, participant_id, speaker_label, start_ms, end_ms, text, text_romanized, text_english, hindi_ratio")
+        .eq("meeting_id", highlight.meeting_id)
+        .lt("start_ms", highlight.end_ms)
+        .gt("end_ms", highlight.start_ms)
+        .order("seq"),
+      client.from("media_assets").select("*").eq("meeting_id", highlight.meeting_id),
+    ]);
+    for (const r of [meeting, participants, segments, media]) if (r.error) throw r.error;
+    const assets = media.data as MediaAsset[];
+    const playable = assets.find((m) => m.kind === "video") ?? assets.find((m) => m.kind === "audio");
+    return {
+      kind: "highlight",
+      share,
+      highlight: highlight as Highlight,
+      meeting: meeting.data as Meeting,
+      participants: participants.data as Participant[],
+      segments: segments.data as TranscriptSegment[],
+      media: playable ? { ...playable, url: mediaUrl(playable.storage_path) } : null,
+    };
+  }
+
+  const [meeting, participants, summary, actionItems] = await Promise.all([
+    client.from("meetings").select("*").eq("id", share.target_id).maybeSingle(),
+    client.from("participants").select("*").eq("meeting_id", share.target_id).order("talk_time_ms", { ascending: false }),
+    client
+      .from("summaries")
+      .select("*, summary_templates!inner()")
+      .eq("meeting_id", share.target_id)
+      .eq("summary_templates.key", "general")
+      .eq("status", "ready")
+      .maybeSingle(),
+    client.from("action_items").select("*").eq("meeting_id", share.target_id).order("source_ms"),
+  ]);
+  for (const r of [meeting, participants, summary, actionItems]) if (r.error) throw r.error;
+  if (!meeting.data) return null;
+  return {
+    kind: "meeting",
+    share,
+    meeting: meeting.data as Meeting,
+    participants: participants.data as Participant[],
+    summary: (summary.data as Summary | null) ?? null,
+    actionItems: actionItems.data as ActionItem[],
   };
 }

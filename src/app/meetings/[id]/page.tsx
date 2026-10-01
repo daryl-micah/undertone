@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
 import { LanguageBadge } from "@/components/language-badge";
+import { ShareButton } from "@/components/share-dialog";
 import { MeetingView } from "@/components/meeting/meeting-view";
 import { SetupNotice } from "@/components/setup-notice";
 import { getMeeting } from "@/lib/data";
@@ -66,8 +67,16 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
             {formatDuration(meeting.duration_ms)} · {participants.length} people
           </p>
         </div>
-        <div className="hidden sm:block">
-          <AvatarStack people={participants} max={8} />
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:block">
+            <AvatarStack people={participants} max={8} />
+          </div>
+          <ShareButton
+            targetType="meeting"
+            targetId={meeting.id}
+            label={meeting.title}
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-surface-2"
+          />
         </div>
       </div>
 

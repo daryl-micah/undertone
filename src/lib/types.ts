@@ -123,6 +123,8 @@ export interface ShareLink {
   created_at: string;
   expires_at: string | null;
   view_count: number;
+  allow_full_meeting: boolean;
+  created_by_name: string | null;
 }
 
 export interface CalendarEvent {

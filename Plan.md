@@ -161,12 +161,18 @@ The main differentiator. Built on top of Phases 1–4 and threaded through every
 - **Not searched:** summaries, whose content comes from the transcript, so their hits would duplicate transcript hits.
 - **Deferred:** "Ask across meetings" (cited answers with Groq). It's the next thing to add if time allows.
 
-## Phase 8: Sharing with someone not on the call
-- **Share links:** "Share" on a highlight or meeting creates a `share_links` token.
-- **Public page** at `/s/[token]`, needing no account:
-  - It plays only the clip's range, shows the transcript excerpt and speaker names, and links to "open full meeting" if the share allows it.
-  - It has proper Open Graph tags, so a pasted link shows a preview card.
-- **Views:** a view counter on the share.
+## Phase 8: Sharing with someone not on the call ✅
+- **Share dialog** on every highlight (Highlights tab) and on the meeting header.
+  - Copy link, plus "Share via…" (the browser's native share sheet) where it exists, and the view count.
+  - Highlight links can opt in to "Let them open the full meeting" (`share_links.allow_full_meeting`). A different permission gives a different link.
+  - Sharing the same thing twice reuses the existing link, so there's one URL and one view count.
+  - A Hinglish reader's `?script=` mode is carried into the link.
+- **Public `/s/[token]`**, needing no account:
+  - **Clips:** a bounded player that stops at the clip end, the clip's transcript with speakers (the current line highlighted, click to jump), and the sharer's note. It has the same Mixed / Romanized / English toggle. "Open the full meeting" appears only when allowed.
+  - **Meetings:** the General summary (timestamps link into the recording) and read-only action items, since people outside the meeting don't tick off the team's tasks.
+  - Expired or unknown links get a friendly page.
+- **Open Graph:** title, description and a generated 1200×630 card, marked `noindex`. The card is in English: the default image font has no Devanagari, and an English preview reads for anyone the link is pasted to.
+- **Views:** counted atomically by `record_share_view()`. Link-preview bots (WhatsApp, Slack and so on) don't count.
 
 ## Phase 9: Home, calendar, notetaker states
 - **Meetings home:** "Upcoming" (from `calendar_events`) with per-meeting "Notetaker will join" toggles, plus "Recent" with status chips, duration, participants and a summary preview.
