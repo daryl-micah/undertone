@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
 import { LanguageBadge } from "@/components/language-badge";
+import { LiveMeeting } from "@/components/live-meeting";
 import { ShareButton } from "@/components/share-dialog";
 import { MeetingView } from "@/components/meeting/meeting-view";
 import { SetupNotice } from "@/components/setup-notice";
@@ -25,6 +26,30 @@ export default async function MeetingPage(props: PageProps<"/meetings/[id]">) {
   if (!detail) notFound();
 
   const { meeting, participants, segments, chapters, actionItems, highlights, media, templates, summaries } = detail;
+  const awaitingRecording = meeting.status === "processing" && !media.length;
+  if (meeting.status === "joining" || meeting.status === "recording" || awaitingRecording) {
+    return (
+      <div className="space-y-5">
+        <div>
+          <Link href="/" className="text-sm text-muted hover:text-text">
+            ← Meetings
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{meeting.title}</h1>
+          <p className="text-sm text-muted">
+            {PLATFORM_LABEL[meeting.platform]} · {participants.length} invited
+          </p>
+        </div>
+        <LiveMeeting
+          meetingId={meeting.id}
+          status={meeting.status}
+          platform={meeting.platform}
+          startedAt={meeting.started_at}
+          durationMs={meeting.duration_ms}
+          participants={participants.map((p) => ({ id: p.id, name: p.name, color: p.color }))}
+        />
+      </div>
+    );
+  }
   if (meeting.status !== "ready" || !segments.length) {
     return (
       <div className="space-y-4">

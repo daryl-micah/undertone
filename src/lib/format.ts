@@ -18,6 +18,10 @@ export function formatDuration(ms: number | null) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+// The product is for Indian teams, so wall-clock times are shown in IST. Rendering
+// on the server in a fixed zone also avoids hydration mismatches.
+export const TIME_ZONE = "Asia/Kolkata";
+
 export function formatMeetingDate(iso: string | null) {
   if (!iso) return "Not started";
   return new Intl.DateTimeFormat("en-GB", {
@@ -26,8 +30,24 @@ export function formatMeetingDate(iso: string | null) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: TIME_ZONE,
   }).format(new Date(iso));
+}
+
+/** "10:30" in IST. */
+export function formatClock(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE }).format(new Date(iso));
+}
+
+/** "Today", "Tomorrow" or "Fri 3 Oct", by IST calendar day. */
+export function formatDayLabel(iso: string, now = new Date()) {
+  const day = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(d); // YYYY-MM-DD
+  const target = day(new Date(iso));
+  if (target === day(now)) return "Today";
+  if (target === day(new Date(now.getTime() + 86_400_000))) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TIME_ZONE }).format(
+    new Date(iso),
+  );
 }
 
 export function initials(name: string) {

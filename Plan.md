@@ -174,9 +174,18 @@ The main differentiator. Built on top of Phases 1–4 and threaded through every
 - **Open Graph:** title, description and a generated 1200×630 card, marked `noindex`. The card is in English: the default image font has no Devanagari, and an English preview reads for anyone the link is pasted to.
 - **Views:** counted atomically by `record_share_view()`. Link-preview bots (WhatsApp, Slack and so on) don't count.
 
-## Phase 9: Home, calendar, notetaker states
-- **Meetings home:** "Upcoming" (from `calendar_events`) with per-meeting "Notetaker will join" toggles, plus "Recent" with status chips, duration, participants and a summary preview.
-- **Calendar connect:** stubbed. "Connect Google Calendar" loads realistic sample events. Real Google OAuth only if time allows.
+## Phase 9: Home, calendar, notetaker states ✅
+- **Calendar connect (stubbed):** "Connect Google Calendar" upserts 7 sample events placed around now (`src/lib/demo-calendar.ts`). One is always happening right now, so the notetaker can be sent in on demand. Reconnecting refreshes their times, and Disconnect removes them.
+- **Upcoming** on the home page, grouped by IST day:
+  - A per-event "Notetaker will join" switch. The all-hands defaults off, and an in-person lunch with no video link says the notetaker can't join.
+  - "Send notetaker now" on an event that's live, and a link to its meeting once it has one ("Recording", "Notes ready").
+- **Notetaker states**, simulated and labelled as such on the page:
+  - **joining:** the waiting room, admitted after a few seconds.
+  - **recording:** a live timer, the invitees' tiles and Stop.
+  - **processing:** "upload the recording".
+  - The upload attaches to that same meeting (`POST /api/uploads` with `meetingId`), so calendar → notetaker → recording → transcript works end to end. Diarized speakers replace the invitee placeholders, because which invitee is which voice can't be known.
+- **Recent:** each meeting shows the first line of its General summary.
+- **Times in IST** throughout (`TIME_ZONE` in `src/lib/format.ts`). The product is for Indian teams, and a fixed zone avoids hydration mismatches.
 
 ## Phase 10: Polish and walkthrough
 - **Loading, empty and error states:**

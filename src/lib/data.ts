@@ -2,6 +2,7 @@ import "server-only";
 import { db, mediaUrl } from "./supabase";
 import type {
   ActionItem,
+  CalendarEvent,
   Chapter,
   Highlight,
   MediaAsset,
@@ -268,4 +269,67 @@ export async function getSharePage(token: string, countView: boolean): Promise<S
     summary: (summary.data as Summary | null) ?? null,
     actionItems: actionItems.data as ActionItem[],
   };
+}
+
+// --- Home -----------------------------------------------------------------------
+
+export type UpcomingEvent = CalendarEvent & {
+  live_meeting: { id: string; status: string } | null;
+  /** Joinable from 10 minutes before the start until it ends. */
+  happening_now: boolean;
+};
+
+/** Calendar state for the home page: whether a calendar is connected, and what's next. */
+export async function listUpcoming(): Promise<{ connected: boolean; events: UpcomingEvent[] }> {
+  const client = db();
+  const [{ count }, upcoming] = await Promise.all([
+    client.from("calendar_events").select("id", { count: "exact", head: true }),
+    client
+      .from("calendar_events")
+      .select("*")
+      .gt("ends_at", new Date().toISOString())
+      .order("starts_at")
+      .limit(12),
+  ]);
+  if (upcoming.error) throw upcoming.error;
+  const events = upcoming.data as CalendarEvent[];
+  const { data: live, error } = events.length
+    ? await client
+        .from("meetings")
+        .select("id, status, calendar_event_id")
+        .in("calendar_event_id", events.map((e) => e.id))
+        .in("status", ["joining", "recording", "processing", "ready"])
+        .order("created_at", { ascending: false })
+    : { data: [], error: null };
+  if (error) throw error;
+  const now = Date.now();
+  return {
+    connected: Boolean(count),
+    events: events.map((e) => {
+      const m = live?.find((x) => x.calendar_event_id === e.id);
+      return {
+        ...e,
+        live_meeting: m ? { id: m.id, status: m.status } : null,
+        happening_now: Date.parse(e.starts_at) - 10 * 60_000 <= now && Date.parse(e.ends_at) > now,
+      };
+    }),
+  };
+}
+
+/** First line of each meeting's General summary, for previews in lists. */
+export async function summaryPreviews(meetingIds: string[]): Promise<Map<string, string>> {
+  if (!meetingIds.length) return new Map();
+  const { data, error } = await db()
+    .from("summaries")
+    .select("meeting_id, content, summary_templates!inner()")
+    .in("meeting_id", meetingIds)
+    .eq("summary_templates.key", "general")
+    .eq("status", "ready");
+  if (error) throw error;
+  return new Map(
+    (data as { meeting_id: string; content: Summary["content"] }[]).flatMap((s) => {
+      const first = s.content?.sections.find((sec) => sec.bullets.length)?.bullets[0]?.text;
+      return first ? [[s.meeting_id, first]] : [];
+    }),
+  );
 }

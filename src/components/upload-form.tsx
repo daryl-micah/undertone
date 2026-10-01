@@ -15,7 +15,8 @@ function durationOf(file: File): Promise<number | null> {
   });
 }
 
-export function UploadForm() {
+/** meetingId attaches the recording to an existing meeting (from the calendar). */
+export function UploadForm({ meetingId: existingMeetingId }: { meetingId?: string } = {}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -36,6 +37,7 @@ export function UploadForm() {
           mime: file.type,
           size: file.size,
           durationMs: await durationOf(file),
+          meetingId: existingMeetingId,
         }),
       });
       const { meetingId, uploadUrl, error } = await created.json();
@@ -59,7 +61,10 @@ export function UploadForm() {
           const msg = JSON.parse(line) as { progress?: string; done?: boolean; error?: string };
           if (msg.progress) setStage({ kind: "working", message: msg.progress });
           if (msg.error) throw new Error(msg.error);
-          if (msg.done) router.push(`/meetings/${meetingId}`);
+          if (msg.done) {
+            router.push(`/meetings/${meetingId}`);
+            router.refresh();
+          }
         }
       }
     } catch (err) {
@@ -79,7 +84,7 @@ export function UploadForm() {
           className="mt-1.5 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-sm file:text-accent"
         />
       </label>
-      <label className="block">
+      <label className={existingMeetingId ? "hidden" : "block"}>
         <span className="text-sm font-medium">Title</span>
         <input
           value={title}

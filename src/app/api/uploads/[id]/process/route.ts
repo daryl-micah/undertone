@@ -48,6 +48,10 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/uploads/[i
         if (!lines.length) throw new Error("No speech was found in this recording");
 
         progress("Saving transcript");
+        // Calendar meetings start with the invitees as placeholder participants.
+        // Which invitee is which voice can't be known, so diarized speakers replace them.
+        const { error: dErr } = await client.from("participants").delete().eq("meeting_id", id);
+        if (dErr) throw dErr;
         // Diarized speakers become "Speaker 1..N" in order of first appearance.
         const order = [...new Set(lines.map((l) => l.speakerId))];
         const talk = new Map<string, number>();

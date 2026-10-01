@@ -3,8 +3,9 @@ import { connection } from "next/server";
 import { AvatarStack } from "@/components/avatar-stack";
 import { LanguageBadge } from "@/components/language-badge";
 import { SetupNotice } from "@/components/setup-notice";
-import { listMeetings } from "@/lib/data";
-import { formatDuration, formatMeetingDate } from "@/lib/format";
+import { Upcoming } from "@/components/upcoming";
+import { listMeetings, listUpcoming, summaryPreviews } from "@/lib/data";
+import { formatClock, formatDayLabel, formatDuration, formatMeetingDate } from "@/lib/format";
 import { isConfigured } from "@/lib/supabase";
 import type { MeetingPlatform, MeetingStatus } from "@/lib/types";
 
@@ -37,8 +38,36 @@ export default async function MeetingsPage() {
           Upload recording
         </Link>
       </div>
-      {isConfigured() ? <MeetingList /> : <SetupNotice />}
+      {isConfigured() ? (
+        <>
+          <UpcomingSection />
+          <MeetingList />
+        </>
+      ) : (
+        <SetupNotice />
+      )}
     </div>
+  );
+}
+
+async function UpcomingSection() {
+  const { connected, events } = await listUpcoming();
+  return (
+    <Upcoming
+      connected={connected}
+      rows={events.map((e) => ({
+        id: e.id,
+        title: e.title,
+        day: formatDayLabel(e.starts_at),
+        time: `${formatClock(e.starts_at)}–${formatClock(e.ends_at)}`,
+        platformLabel: e.platform ? PLATFORM_LABEL[e.platform] : null,
+        attendees: e.attendees.map((a) => ({ name: a.name })),
+        autoRecord: e.auto_record,
+        canJoin: Boolean(e.join_url && e.platform),
+        happeningNow: e.happening_now,
+        live: e.live_meeting,
+      }))}
+    />
   );
 }
 
@@ -47,6 +76,7 @@ async function MeetingList() {
   const meetings = (await listMeetings()).sort(
     (a, b) => Number(b.language_mix === "hi-en") - Number(a.language_mix === "hi-en"),
   );
+  const previews = await summaryPreviews(meetings.map((m) => m.id));
 
   if (meetings.length === 0) {
     return (
@@ -57,6 +87,8 @@ async function MeetingList() {
   }
 
   return (
+    <section className="space-y-2">
+      <h2 className="text-sm font-medium">Recent</h2>
     <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
       {meetings.map((m) => (
         <li key={m.id}>
@@ -79,11 +111,13 @@ async function MeetingList() {
                 {formatMeetingDate(m.started_at)} · {PLATFORM_LABEL[m.platform]} · {formatDuration(m.duration_ms)} ·{" "}
                 {m.participants.length} {m.participants.length === 1 ? "person" : "people"}
               </p>
+              {previews.get(m.id) && <p className="mt-1 line-clamp-1 text-sm">{previews.get(m.id)}</p>}
             </div>
             <AvatarStack people={m.participants} />
           </Link>
         </li>
       ))}
     </ul>
+    </section>
   );
 }
